@@ -13,7 +13,11 @@ static SCHEMA: &str = include_str!("schema.json");
 /// check a given file for correctness
 pub fn check(file: &str) -> Result<result::CheckResult, Box<dyn Error>> {
     //check file
-    fs::exists(file)?;
+    if !fs::exists(file)? {
+        let mut ret = result::CheckResult::not_ok();
+        ret.error_list.push("File not found".to_string());
+        return Ok(ret);
+    }
     if !file.ends_with(".yaml") && !file.ends_with(".yml") {
         let mut ret = result::CheckResult::not_ok();
         ret.error_list.push("File has no Yaml extension (.yaml or .yml)".to_string());
