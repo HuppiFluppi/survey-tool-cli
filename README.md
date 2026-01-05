@@ -80,7 +80,7 @@ survey-tool-cli --help
 ```
 
 ## Roadmap
-- [ ] Add Github build pipeline for release
+- [x] Add Github build pipeline for release
 - [ ] Add edit/create of configuration files
 - [ ] Refactor project with new insights and learnings in Rust
 
