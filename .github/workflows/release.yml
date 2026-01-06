@@ -79,7 +79,7 @@ jobs:
         with:
           name: Survey Tool Cli Windows
           path: "target/release/survey-tool-cli-${{ github.ref_name }}-windows.exe"
-      - name: Create Release
+      - name: Update Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload $env:GITHUB_REF_NAME "target/release/survey-tool-cli-$env:GITHUB_REF_NAME-windows.exe"
