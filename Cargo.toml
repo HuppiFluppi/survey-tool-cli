@@ -3,7 +3,7 @@ name = "survey-tool-cli"
 description = "Command line tool accompanying the survey-tool. Allows operations on survey configuration files."
 authors = ["Felix Zinkel"]
 license = "MIT"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
