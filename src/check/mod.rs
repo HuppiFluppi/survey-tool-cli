@@ -8,6 +8,9 @@
 use crate::models::result;
 use std::{error::Error, fs};
 
+// For now, the schema.json is embedded in the app.
+// Even more, the logic in the actual survey tool is not based on the schema.
+// This might lead to problems in the future.
 static SCHEMA: &str = include_str!("schema.json");
 
 /// check a given file for correctness

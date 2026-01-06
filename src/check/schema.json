@@ -12,7 +12,6 @@
   ],
   "$defs": {
     "SurveyConfig": {
-      "title": "Survey configuration",
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -51,12 +50,8 @@
     },
     "PageConfig": {
       "type": "object",
-      "title": "Page",
       "additionalProperties": false,
-      "required": [
-        "content",
-        "title"
-      ],
+      "required": [ "content" ],
       "properties": {
         "title": {
           "type": "string",
@@ -121,25 +116,99 @@
       }
     },
     "Question": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/DataQuestion"
+        },
+        {
+          "$ref": "#/$defs/InformationQuestion"
+        },
+        {
+          "$ref": "#/$defs/ChoiceQuestion"
+        },
+        {
+          "$ref": "#/$defs/TextQuestion"
+        },
+        {
+          "$ref": "#/$defs/DatetimeQuestion"
+        },
+        {
+          "$ref": "#/$defs/SliderQuestion"
+        },
+        {
+          "$ref": "#/$defs/RatingQuestion"
+        },
+        {
+          "$ref": "#/$defs/LikertQuestion"
+        }
+      ]
+    },
+    "DataQuestion": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "type",
         "title"
       ],
       "properties": {
         "type": {
+          "const": "data",
           "type": "string",
-          "description": "Specify the type of question",
-          "enum": [
-            "data",
-            "choice",
-            "text",
-            "rating",
-            "likert",
-            "datetime",
-            "information",
-            "slider"
-          ]
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "datatype": {
+              "type": "string",
+              "enum": [
+                "name",
+                "nickname",
+                "email",
+                "phone",
+                "age",
+                "birthday",
+                "custom"
+              ],
+              "description": "Type of the data",
+              "default": "name"
+            },
+            "validation_pattern": {
+              "type": "string",
+              "description": "Regex pattern to validate the input. If omitted, data types name, email and phone use default patterns. Please make sure to use single quotes(') to avoid loading errors"
+            },
+            "use_for_leaderboard": {
+              "type": "boolean",
+              "description": "If true, this data will be used for the leaderboard. Only relevant for quizzes and data-type 'name'",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    "InformationQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "information",
+          "type": "string",
+          "description": "Specify the type of question"
         },
         "required": {
           "type": "boolean",
@@ -152,17 +221,443 @@
           "minLength": 5
         },
         "description": {
-          "type": "string"
+          "type": "string",
+          "description": "Optional description of the content block",
+          "minLength": 20
         },
         "image_path": {
-          "type": "string"
+          "type": "string",
+          "description": "Path to an image file to show below the title and description. Please make sure to use single quotes(') or use slash (/) not backslash for path separation",
+          "minLength": 6
+        }
+      }
+    },
+    "ChoiceQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "choice",
+          "type": "string",
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
         },
         "config": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": false,
+          "required": [
+            "choices"
+          ],
+          "properties": {
+            "multiple": {
+              "type": "boolean",
+              "description": "Allow multiple selections",
+              "default": false
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max selections when multiple == true; if 0, no limit",
+              "minimum": 0,
+              "default": 2
+            },
+            "dropdown": {
+              "type": "boolean",
+              "description": "Show a dropdown instead of checklist items. Only relevant if multiple == false",
+              "default": false
+            },
+            "horizontal": {
+              "type": "boolean",
+              "description": "Show choices horizontally. Use only with short choice titles. Only relevant if multiple == false",
+              "default": false
+            },
+            "choices": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "description": "Title of the choice",
+                        "minLength": 1
+                      },
+                      "correct": {
+                        "type": "boolean",
+                        "description": "If true, this choice is correct. Used in quiz mode",
+                        "default": false
+                      },
+                      "score": {
+                        "type": "integer",
+                        "description": "Points to award for this choice. Used in quiz mode"
+                      }
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "description": "Choice item"
+                  }
+                ]
+              }
+            }
+          }
         }
-      },
-      "additionalProperties": false
+      }
+    },
+    "TextQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "text",
+          "type": "string",
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "multiline": {
+              "type": "boolean",
+              "description": "If you expect lengthy answers, set this to true",
+              "default": false
+            },
+            "pattern": {
+              "type": "string",
+              "description": "Regex pattern to match the input against. Not used for scoring"
+            },
+            "score": {
+              "type": "integer",
+              "description": "Points to award for this question. Used in quiz mode",
+              "minimum": 0
+            },
+            "correct_answer": {
+              "type": "string",
+              "description": "Correct answer to the question. Used in quiz mode"
+            },
+            "correct_answer_pattern": {
+              "type": "string",
+              "description": "Regex pattern to match the correct answer against. Used in quiz mode. Ignored if 'correct_answer' present"
+            },
+            "correct_answer_list": {
+              "type": "array",
+              "description": "list of correct answers. Ignored if 'correct_answer' or 'correct_answer_pattern' present",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "DatetimeQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "datetime",
+          "type": "string",
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "input_type": {
+              "type": "string",
+              "description": "Whether the user should input time, date or both",
+              "enum": [
+                "date",
+                "time",
+                "datetime"
+              ],
+              "default": "datetime"
+            },
+            "initial_selected_time": {
+              "type": "string",
+              "description": "If given, sets the initial selected time. Format: HH:mm",
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+            },
+            "initial_selected_date": {
+              "type": "string",
+              "description": "If given, sets the initial selected date. Format: YYYY-MM-DD",
+              "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+            },
+            "score": {
+              "type": "integer",
+              "description": "Points to award for this question. Used in quiz mode",
+              "minimum": 0
+            },
+            "correct_time_answer": {
+              "type": "string",
+              "description": "Correct time answer to the question. Used in quiz mode. Format: HH:mm",
+              "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+            },
+            "correct_date_answer": {
+              "type": "string",
+              "description": "Correct date answer to the question. Used in quiz mode. Format: YYYY-MM-DD",
+              "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+            }
+          }
+        }
+      }
+    },
+    "SliderQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "slider",
+          "type": "string",
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "range": {
+              "type": "boolean",
+              "description": "If true, the user can select a range (two values) on the slider",
+              "default": false
+            },
+            "start": {
+              "type": "number",
+              "description": "Together with 'end', defines first number of slider",
+              "default": 0
+            },
+            "end": {
+              "type": "number",
+              "description": "Together with 'start', defines last number of slider",
+              "default": 1
+            },
+            "steps": {
+              "type": "integer",
+              "description": "Steps between start and end that can be chosen (start & end always add two steps). If 0, a continuous slider is created without any fixed steps",
+              "default": 0,
+              "minimum": 0
+            },
+            "show_decimals": {
+              "type": "boolean",
+              "description": "If true, the slider will show decimal values. Internally, the values are always decimals",
+              "default": false
+            },
+            "unit": {
+              "type": "string",
+              "description": "If given, will be shown next to start, end and current value"
+            },
+            "score": {
+              "type": "integer",
+              "description": "Points to award for this question. Used in quiz mode",
+              "minimum": 0
+            },
+            "correct_answer": {
+              "type": "number",
+              "description": "Correct answer to the question. For ranges, this number must be in the chosen range. Used in quiz mode"
+            }
+          }
+        }
+      }
+    },
+    "RatingQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "rating",
+          "type": "string",
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "type": "integer",
+              "description": "Number of rating options to show",
+              "minimum": 3,
+              "maximum": 10,
+              "default": 5
+            },
+            "symbol": {
+              "type": "string",
+              "description": "Icon type for rating",
+              "enum": [
+                "like",
+                "star",
+                "heart",
+                "smile",
+                "number"
+              ],
+              "default": "star"
+            },
+            "color_gradient": {
+              "type": "string",
+              "description": "Color scheme of the rating",
+              "enum": [
+                "none",
+                "red2green"
+              ],
+              "default": "none"
+            }
+          }
+        }
+      }
+    },
+    "LikertQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "likert",
+          "type": "string",
+          "description": "Specify the type of question"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the user must answer this question",
+          "default": true
+        },
+        "title": {
+          "type": "string",
+          "description": "Question/Headline to show to the user",
+          "minLength": 5
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "choices",
+            "statements"
+          ],
+          "properties": {
+            "choices": {
+              "type": "array",
+              "minItems": 2,
+              "description": "Likert scale options (columns)",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "statements": {
+              "type": "array",
+              "minItems": 1,
+              "description": "Likert statements (rows)",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "title"
+                    ],
+                    "properties": {
+                      "title": {
+                        "type": "string",
+                        "description": "Title of the statement",
+                        "minLength": 1
+                      },
+                      "correct_choice": {
+                        "type": "string",
+                        "description": "Correct choice for this statement. Needs to match one of the choices. Used in quiz mode"
+                      },
+                      "score": {
+                        "type": "integer",
+                        "description": "Points to award for this choice. Used in quiz mode",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "description": "Title of the statement"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
