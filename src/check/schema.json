@@ -29,8 +29,13 @@
           "type": "string",
           "minLength": 20
         },
-        "image_path": {
-          "description": "Image to show at the top of the survey. Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
+        "image": {
+          "description": "Path to an image to show at the top of the survey. Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
+          "type": "string",
+          "minLength": 6
+        },
+        "background_image": {
+          "description": "Path to an image to show as background of the survey start page (summary). Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
           "type": "string",
           "minLength": 6
         },
@@ -63,8 +68,8 @@
           "description": "Description of this page",
           "minLength": 20
         },
-        "image_path": {
-          "description": "Image to show at the top of this page. Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
+        "image": {
+          "description": "Path to an image to show at the top of this page. Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
           "type": "string",
           "minLength": 6
         },
@@ -110,6 +115,11 @@
               "description": "Number of entries to show in the leaderboard",
               "minimum": 0,
               "default": 10
+            },
+            "background_image": {
+              "description": "Path to an image to show as highscore background. Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
+              "type": "string",
+              "minLength": 6
             }
           }
         }
@@ -225,7 +235,7 @@
           "description": "Optional description of the content block",
           "minLength": 20
         },
-        "image_path": {
+        "image": {
           "type": "string",
           "description": "Path to an image file to show below the title and description. Please make sure to use single quotes(') or use slash (/) not backslash for path separation",
           "minLength": 6
