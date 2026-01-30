@@ -4,7 +4,7 @@
 //!
 //! Current commands:
 //! - **check**: Check an existing survey tool configuration yaml for correctness
-//! - **setup-check**: Check local host for prerequisits to run survey tool
+//! - **setup-check**: Check local host for prerequisites to run survey tool
 //! - *edit (not yet): Allow to edit(add/remove/change) a survey tool config from command line*
 //!
 //! This binary crate uses the lib crate in the same repository.
@@ -15,7 +15,7 @@ use colored::Colorize;
 use std::{error::Error, process::exit};
 
 use clap::{Parser, Subcommand};
-use survey_tool_cli::{CheckResult, setup_check, config_check};
+use survey_tool_cli::*;
 
 // Cli model with clap configuration
 #[derive(Parser)]

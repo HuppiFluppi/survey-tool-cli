@@ -8,7 +8,7 @@ pub mod result {
         /// simple flag to specify if the operation encountered any errors/problems
         pub all_ok: bool,
 
-        /// list of all successfull checks
+        /// list of all successful checks
         pub success_list: Vec<String>,
 
         /// list of all errors found
@@ -37,5 +37,28 @@ pub mod result {
                 output: None,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::result::*;
+
+    #[test]
+    fn test_all_ok_creates_valid_result() {
+        let result = CheckResult::all_ok();
+        assert!(result.all_ok);
+        assert!(result.success_list.is_empty());
+        assert!(result.error_list.is_empty());
+        assert!(result.output.is_none());
+    }
+
+    #[test]
+    fn test_not_ok_creates_valid_result() {
+        let result = CheckResult::not_ok();
+        assert!(!result.all_ok);
+        assert!(result.success_list.is_empty());
+        assert!(result.error_list.is_empty());
+        assert!(result.output.is_none());
     }
 }

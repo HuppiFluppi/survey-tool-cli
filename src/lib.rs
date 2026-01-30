@@ -4,7 +4,7 @@
 //!
 //! Current commands:
 //! - **config_check**: Check an existing survey tool configuration yaml for correctness
-//! - **setup_check**: Check local host for prerequisits to run survey tool
+//! - **setup_check**: Check local host for prerequisite to run survey tool
 //! - *edit (not yet): Allow to edit(add/remove/change) a survey tool config from command line*
 //!
 //! This lib crate provides the functionality to the binary crate in the same repository.

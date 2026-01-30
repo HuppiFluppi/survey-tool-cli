@@ -8,26 +8,20 @@
 pub struct SurveyConfig {
     pub title: String,
     pub description: String,
-    pub s_type: SurveyType,
+    pub survey_type: SurveyType,
     pub image_path: Option<String>,
     pub score: ScoreSettings,
     pub pages: Vec<SurveyPage>,
 }
 
 impl SurveyConfig {
-    pub fn new(
-        title: String,
-        description: String,
-        s_type: Option<SurveyType>,
-        image_path: Option<String>,
-        score: Option<ScoreSettings>,
-    ) -> SurveyConfig {
+    pub fn new(title: String, description: String, survey_type: Option<SurveyType>, image_path: Option<String>, score: Option<ScoreSettings>) -> SurveyConfig {
         SurveyConfig {
             title,
             description,
-            s_type: s_type.unwrap_or(SurveyType::Survey),
+            survey_type: survey_type.unwrap_or(SurveyType::Survey),
             image_path,
-            score: score.unwrap_or(ScoreSettings::default()),
+            score: score.unwrap_or_default(),
             pages: Vec::new(),
         }
     }
@@ -53,21 +47,19 @@ pub struct ScoreSettings {
     pub leaderboard: LeaderboardSettings,
 }
 
-impl ScoreSettings {
+impl Default for ScoreSettings {
     /// Create settings with default values
-    pub fn default() -> ScoreSettings {
+    fn default() -> ScoreSettings {
         ScoreSettings {
             show_question_scores: false,
             show_leaderboard: true,
             leaderboard: LeaderboardSettings::default(),
         }
     }
+}
 
-    pub fn new(
-        show_question_scores: bool,
-        show_leaderboard: bool,
-        leaderboard: LeaderboardSettings,
-    ) -> ScoreSettings {
+impl ScoreSettings {
+    pub fn new(show_question_scores: bool, show_leaderboard: bool, leaderboard: LeaderboardSettings) -> ScoreSettings {
         ScoreSettings {
             show_question_scores,
             show_leaderboard,
@@ -83,16 +75,18 @@ pub struct LeaderboardSettings {
     pub limit: usize,
 }
 
-impl LeaderboardSettings {
+impl Default for LeaderboardSettings {
     /// Create settings with default values
-    pub fn default() -> LeaderboardSettings {
+    fn default() -> LeaderboardSettings {
         LeaderboardSettings {
             show_scores: true,
             show_placeholder: true,
             limit: 10,
         }
     }
+}
 
+impl LeaderboardSettings {
     pub fn new(show_scores: bool, show_placeholder: bool, limit: usize) -> LeaderboardSettings {
         LeaderboardSettings {
             show_scores,
@@ -110,9 +104,9 @@ pub struct SurveyPage {
     pub content: Vec<SurveyPageContent>,
 }
 
-impl SurveyPage {
+impl Default for SurveyPage {
     /// Create page with default values
-    pub fn default() -> SurveyPage {
+    fn default() -> SurveyPage {
         SurveyPage {
             title: None,
             description: None,
@@ -120,12 +114,10 @@ impl SurveyPage {
             content: Vec::new(),
         }
     }
+}
 
-    pub fn new(
-        title: Option<String>,
-        description: Option<String>,
-        image_path: Option<String>,
-    ) -> SurveyPage {
+impl SurveyPage {
+    pub fn new(title: Option<String>, description: Option<String>, image_path: Option<String>) -> SurveyPage {
         SurveyPage {
             title,
             description,
@@ -144,7 +136,7 @@ impl SurveyPage {
 }
 
 pub struct SurveyPageContentHeader {
-    pub c_type: SurveyContentType,
+    pub content_type: SurveyContentType,
     pub title: String,
     pub required: bool,
 }
@@ -282,4 +274,60 @@ pub struct LikertStatement {
     pub title: String,
     pub score: Option<usize>,
     pub correct_choice: Option<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_survey_config_new() {
+        let config = SurveyConfig::new("Test Survey".to_string(), "Description".to_string(), None, None, None);
+        assert_eq!(config.title, "Test Survey");
+        assert_eq!(config.description, "Description");
+        assert!(config.pages.is_empty());
+    }
+
+    #[test]
+    fn test_survey_config_add_remove_page() {
+        let mut config = SurveyConfig::new("Test".to_string(), "Desc".to_string(), None, None, None);
+        let page = SurveyPage::default();
+        config.add_page(page);
+        assert_eq!(config.pages.len(), 1);
+        config.remove_page(0);
+        assert_eq!(config.pages.len(), 0);
+    }
+
+    #[test]
+    fn test_score_settings_default() {
+        let settings = ScoreSettings::default();
+        assert!(!settings.show_question_scores);
+        assert!(settings.show_leaderboard);
+    }
+
+    #[test]
+    fn test_leaderboard_settings_default() {
+        let settings = LeaderboardSettings::default();
+        assert!(settings.show_scores);
+        assert!(settings.show_placeholder);
+        assert_eq!(settings.limit, 10);
+    }
+
+    #[test]
+    fn test_survey_page_add_remove_content() {
+        let mut page = SurveyPage::default();
+        let content = SurveyPageContent::InformationBlock {
+            header: SurveyPageContentHeader {
+                content_type: SurveyContentType::Information,
+                title: "Info".to_string(),
+                required: false,
+            },
+            description: None,
+            image_path: None,
+        };
+        page.add_content(content);
+        assert_eq!(page.content.len(), 1);
+        page.remove_content(0);
+        assert_eq!(page.content.len(), 0);
+    }
 }
