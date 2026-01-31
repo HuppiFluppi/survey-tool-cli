@@ -89,8 +89,9 @@ survey-tool-cli --help
 - **Language**: Rust (Edition 2024)
 - **CLI Framework**: clap 4.5
 - **JSON Schema Validation**: jsonschema 0.38
-- **YAML Parsing**: serde-saphyr 0.0.12
+- **YAML Parsing**: serde-saphyr 0.0.12 (with serde-json 1.0)
 - **Output Formatting**: colored 3.0
+- **Regex parsing**: regex 1.12
 
 ## Disclaimer
 This software is provided "as is", without warranty of any kind. The author is certain, this software could be done more concise, prettier and overall better.

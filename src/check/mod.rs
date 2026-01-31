@@ -6,7 +6,7 @@
 //! As the Survey Tool is a Kotlin JVM application with Compose runtime, some restrictions apply.
 
 use crate::models::result;
-use std::{error::Error, fs};
+use std::{error::Error, fs, path::Path};
 
 // For now, the schema.json is embedded in the app.
 // Even more, the logic in the actual survey tool is not based on the schema.
@@ -14,14 +14,21 @@ use std::{error::Error, fs};
 static SCHEMA: &str = include_str!("schema.json");
 
 /// check a given file for correctness
-pub fn check(file: &str) -> Result<result::CheckResult, Box<dyn Error>> {
-    //check file
+pub fn check(file: &Path) -> Result<result::CheckResult, Box<dyn Error>> {
+    //check file existsD
     if !fs::exists(file)? {
         let mut ret = result::CheckResult::not_ok();
         ret.error_list.push("File not found".to_string());
         return Ok(ret);
     }
-    if !file.ends_with(".yaml") && !file.ends_with(".yml") {
+
+    //check file extension
+    let Some(ext) = file.extension() else {
+        let mut ret = result::CheckResult::not_ok();
+        ret.error_list.push("File has no extension (.yaml or .yml needed)".to_string());
+        return Ok(ret);
+    };
+    if ext != "yaml" && ext != "yml" {
         let mut ret = result::CheckResult::not_ok();
         ret.error_list.push("File has no Yaml extension (.yaml or .yml)".to_string());
         return Ok(ret);
@@ -42,16 +49,17 @@ pub fn check(file: &str) -> Result<result::CheckResult, Box<dyn Error>> {
     let mut result = result::CheckResult::all_ok();
 
     for (i, x) in instances.iter().enumerate() {
-        check_document(x, &validator, &mut result, i)?;
+        check_document(x, &validator, &mut result, i, file)?;
     }
 
     Ok(result)
 }
 
-fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validator, result: &mut result::CheckResult, document: usize) -> Result<(), Box<dyn Error>> {
+fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validator, result: &mut result::CheckResult, document: usize, file: &Path) -> Result<(), Box<dyn Error>> {
     let evaluation = validator.evaluate(instance);
 
     if evaluation.flag().valid {
+        check_files(instance, result, document, file)?;
         Ok(())
     } else {
         result.all_ok = false;
@@ -68,6 +76,44 @@ fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validato
 
         Ok(())
     }
+}
+
+fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, document: usize, template: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    const FILE_POINTERS: [&str; 3] = [
+        "/background_image",
+        "/image", //maps survey level image and page image element
+        "/score/leaderboard/background_image",
+    ];
+
+    //TODO: need to search based on template file
+
+    // check for no content images
+    for p in FILE_POINTERS {
+        if let Some(serde_json::Value::String(file)) = instance.pointer(p) {
+            if !fs::exists(template.parent().unwrap().join(file))? {
+                result.all_ok = false;
+                result.error_list.push(format!("File '{file}', referenced at '{p}', not found"));
+            }
+        }
+    }
+
+    // check for information block image
+    if let Some(serde_json::Value::Array(array)) = instance.pointer("/content") {
+        for (i, c) in array.iter().enumerate() {
+            if let serde_json::Value::Object(o) = c {
+                if let Some(serde_json::Value::String(s)) = o.get("type") && s == "information" {
+                    if let Some(serde_json::Value::String(file)) = o.get("image") {
+                        if !fs::exists(template.parent().unwrap().join(file))? {
+                            result.all_ok = false;
+                            result.error_list.push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -102,7 +148,7 @@ mod tests {
         });
 
         let result = &mut result::CheckResult::all_ok();
-        check_document(&instance, &get_validator(), result, 0).unwrap();
+        check_document(&instance, &get_validator(), result, 0, Path::new("/test/file.yml")).unwrap();
 
         assert!(!result.all_ok);
         assert_eq!(result.error_list.len(), 1);
@@ -116,7 +162,7 @@ mod tests {
         });
 
         let result = &mut result::CheckResult::all_ok();
-        check_document(&instance, &get_validator(), result, 0).unwrap();
+        check_document(&instance, &get_validator(), result, 0, Path::new("/test/file.yml")).unwrap();
 
         assert!(!result.all_ok);
         assert_eq!(result.error_list.len(), 2);
@@ -130,7 +176,7 @@ mod tests {
         });
 
         let result = &mut result::CheckResult::all_ok();
-        check_document(&instance, &get_validator(), result, 0).unwrap();
+        check_document(&instance, &get_validator(), result, 0, Path::new("/test/file.yml")).unwrap();
 
         assert!(result.all_ok);
         assert_eq!(result.error_list.len(), 0);

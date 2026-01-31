@@ -10,6 +10,7 @@
 //! This lib crate provides the functionality to the binary crate in the same repository.
 
 use std::error::Error;
+use std::path::Path;
 
 mod check;
 mod edit;
@@ -24,8 +25,7 @@ pub fn setup_check() -> Result<CheckResult, Box<dyn Error>> {
 }
 
 /// Validate an existing survey tool configuration file/yaml.
-/// 
 /// file: path to the configuration file
 pub fn config_check(file: &str) -> Result<CheckResult, Box<dyn Error>> {
-    check::check(file)
+    check::check(Path::new(file))
 }
