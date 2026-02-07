@@ -5,22 +5,25 @@
 
 /// Root configuration model describing a single survey or quiz.
 /// This immutable data class is typically created by parsing a configuration source (e.g. via YAML)
+#[derive(Debug)]
 pub struct SurveyConfig {
     pub title: String,
     pub description: String,
     pub survey_type: SurveyType,
     pub image_path: Option<String>,
+    pub background_image_path: Option<String>,
     pub score: ScoreSettings,
     pub pages: Vec<SurveyPage>,
 }
 
 impl SurveyConfig {
-    pub fn new(title: String, description: String, survey_type: Option<SurveyType>, image_path: Option<String>, score: Option<ScoreSettings>) -> SurveyConfig {
+    pub fn new(title: String, description: String, survey_type: Option<SurveyType>, image_path: Option<String>, background_image_path: Option<String>, score: Option<ScoreSettings>) -> SurveyConfig {
         SurveyConfig {
             title,
             description,
             survey_type: survey_type.unwrap_or(SurveyType::Survey),
             image_path,
+            background_image_path,
             score: score.unwrap_or_default(),
             pages: Vec::new(),
         }
@@ -35,12 +38,14 @@ impl SurveyConfig {
     }
 }
 
+#[derive(Debug)]
 pub enum SurveyType {
     Survey,
     Quiz,
 }
 
 /// Global scoring options for a survey/quiz.
+#[derive(Debug)]
 pub struct ScoreSettings {
     pub show_question_scores: bool,
     pub show_leaderboard: bool,
@@ -69,10 +74,12 @@ impl ScoreSettings {
 }
 
 /// Leaderboard configuration details.
+#[derive(Debug)]
 pub struct LeaderboardSettings {
     pub show_scores: bool,
     pub show_placeholder: bool,
     pub limit: usize,
+    pub background_image_path: Option<String>,
 }
 
 impl Default for LeaderboardSettings {
@@ -82,21 +89,24 @@ impl Default for LeaderboardSettings {
             show_scores: true,
             show_placeholder: true,
             limit: 10,
+            background_image_path: None
         }
     }
 }
 
 impl LeaderboardSettings {
-    pub fn new(show_scores: bool, show_placeholder: bool, limit: usize) -> LeaderboardSettings {
+    pub fn new(show_scores: bool, show_placeholder: bool, limit: usize, background_image_path: Option<String>) -> LeaderboardSettings {
         LeaderboardSettings {
             show_scores,
             show_placeholder,
             limit,
+            background_image_path
         }
     }
 }
 
 /// A single page in the survey.
+#[derive(Debug)]
 pub struct SurveyPage {
     pub title: Option<String>,
     pub description: Option<String>,
@@ -135,12 +145,14 @@ impl SurveyPage {
     }
 }
 
+#[derive(Debug)]
 pub struct SurveyPageContentHeader {
     pub content_type: SurveyContentType,
     pub title: String,
     pub required: bool,
 }
 
+#[derive(Debug)]
 pub enum SurveyContentType {
     Text,
     Choice,
@@ -152,6 +164,7 @@ pub enum SurveyContentType {
     Slider,
 }
 
+#[derive(Debug)]
 pub enum SurveyPageContent {
     /// Free-text question.
     TextQuestion {
@@ -235,12 +248,14 @@ pub enum SurveyPageContent {
     },
 }
 
+#[derive(Debug)]
 pub struct ChoiceItem {
     pub title: String,
     pub score: Option<usize>,
     pub correct: bool,
 }
 
+#[derive(Debug)]
 pub enum DataQuestionType {
     Name,
     Email,
@@ -251,12 +266,14 @@ pub enum DataQuestionType {
     Birthday,
 }
 
+#[derive(Debug)]
 pub enum DateTimeType {
     Date,
     Time,
     DateTime,
 }
 
+#[derive(Debug)]
 pub enum RatingSymbol {
     Star,
     Heart,
@@ -265,11 +282,13 @@ pub enum RatingSymbol {
     Number,
 }
 
+#[derive(Debug)]
 pub enum RatingColorGradient {
     None,
     Red2Green,
 }
 
+#[derive(Debug)]
 pub struct LikertStatement {
     pub title: String,
     pub score: Option<usize>,
@@ -282,7 +301,7 @@ mod tests {
 
     #[test]
     fn test_survey_config_new() {
-        let config = SurveyConfig::new("Test Survey".to_string(), "Description".to_string(), None, None, None);
+        let config = SurveyConfig::new("Test Survey".to_string(), "Description".to_string(), None, None, None, None);
         assert_eq!(config.title, "Test Survey");
         assert_eq!(config.description, "Description");
         assert!(config.pages.is_empty());
@@ -290,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_survey_config_add_remove_page() {
-        let mut config = SurveyConfig::new("Test".to_string(), "Desc".to_string(), None, None, None);
+        let mut config = SurveyConfig::new("Test".to_string(), "Desc".to_string(), None, None, None, None);
         let page = SurveyPage::default();
         config.add_page(page);
         assert_eq!(config.pages.len(), 1);
