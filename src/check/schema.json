@@ -56,7 +56,9 @@
     "PageConfig": {
       "type": "object",
       "additionalProperties": false,
-      "required": [ "content" ],
+      "required": [
+        "content"
+      ],
       "properties": {
         "title": {
           "type": "string",
@@ -72,6 +74,9 @@
           "description": "Path to an image to show at the top of this page. Please make sure to use single quotes(') or use slash (/), not backslash for path separation",
           "type": "string",
           "minLength": 6
+        },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
         },
         "content": {
           "type": "array",
@@ -121,6 +126,30 @@
               "type": "string",
               "minLength": 6
             }
+          }
+        }
+      }
+    },
+    "ConditionalSettings": {
+      "description": "Conditionally show this page based on a previous user answer/choice. Needs a choice question with correspondign 'conditional_key'",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "A reference to an existing questions 'conditional_key'",
+          "minLength": 3
+        },
+        "value": {
+          "description": "A list of values that would enable this condition",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
           }
         }
       }
@@ -176,6 +205,9 @@
           "description": "Question/Headline to show to the user",
           "minLength": 5
         },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
+        },
         "config": {
           "type": "object",
           "additionalProperties": false,
@@ -230,6 +262,9 @@
           "description": "Question/Headline to show to the user",
           "minLength": 5
         },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
+        },
         "description": {
           "type": "string",
           "description": "Optional description of the content block",
@@ -266,6 +301,9 @@
           "description": "Question/Headline to show to the user",
           "minLength": 5
         },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
+        },
         "config": {
           "type": "object",
           "additionalProperties": false,
@@ -293,6 +331,11 @@
               "type": "boolean",
               "description": "Show choices horizontally. Use only with short choice titles. Only relevant if multiple == false",
               "default": false
+            },
+            "conditional_key": {
+              "type": "string",
+              "description": "If given, the value of this choice question can be used to conditionally show question or pages",
+              "minLength": 3
             },
             "choices": {
               "type": "array",
@@ -356,6 +399,9 @@
           "description": "Question/Headline to show to the user",
           "minLength": 5
         },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
+        },
         "config": {
           "type": "object",
           "additionalProperties": false,
@@ -415,6 +461,9 @@
           "type": "string",
           "description": "Question/Headline to show to the user",
           "minLength": 5
+        },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
         },
         "config": {
           "type": "object",
@@ -481,6 +530,9 @@
           "type": "string",
           "description": "Question/Headline to show to the user",
           "minLength": 5
+        },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
         },
         "config": {
           "type": "object",
@@ -552,6 +604,9 @@
           "description": "Question/Headline to show to the user",
           "minLength": 5
         },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
+        },
         "config": {
           "type": "object",
           "additionalProperties": false,
@@ -611,6 +666,9 @@
           "type": "string",
           "description": "Question/Headline to show to the user",
           "minLength": 5
+        },
+        "conditional": {
+          "$ref": "#/$defs/ConditionalSettings"
         },
         "config": {
           "type": "object",
