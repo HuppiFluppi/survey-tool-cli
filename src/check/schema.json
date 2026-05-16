@@ -131,7 +131,7 @@
       }
     },
     "ConditionalSettings": {
-      "description": "Conditionally show this page based on a previous user answer/choice. Needs a choice question with correspondign 'conditional_key'",
+      "description": "Conditionally show this page based on a previous user answer/choice. Needs a choice question with corresponding 'conditional_key'",
       "type": "object",
       "additionalProperties": false,
       "required": [
