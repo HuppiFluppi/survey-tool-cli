@@ -2,8 +2,6 @@
 //!
 //! Checks survey tool configuration files (yaml) for correctnes according to schema.
 //! The schema is embedded at build time.
-//!
-//! As the Survey Tool is a Kotlin JVM application with Compose runtime, some restrictions apply.
 
 use crate::models::error;
 use crate::models::result;

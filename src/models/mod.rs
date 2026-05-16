@@ -44,6 +44,7 @@ pub mod error {
     use std::error;
     use std::fmt;
 
+    /// Error type used throughout survey tool cli
     #[derive(Debug)]
     pub enum STCError {
         Unspecified,

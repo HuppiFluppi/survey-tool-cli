@@ -1,7 +1,6 @@
 //! # Setup check module
 //!
 //! Checks host for needed prerequisites to run the survey tool application
-//!
 //! As the Survey Tool is a Kotlin JVM application with Compose runtime, some restrictions apply.
 
 use regex::Regex;
