@@ -6,15 +6,15 @@
 
 use regex::Regex;
 use std::env;
-use std::error::Error;
 use std::process;
 
+use crate::models::error;
 use crate::models::result;
 
-const MINIMUM_JAVA_VERSION: usize = 21;
+const MINIMUM_JAVA_VERSION: usize = 25;
 
 /// Check the system for compatibility
-pub fn check() -> Result<result::CheckResult, Box<dyn Error>> {
+pub fn check() -> Result<result::CheckResult, error::STCError> {
     let mut result = result::CheckResult::all_ok();
 
     //check operating system
@@ -22,7 +22,9 @@ pub fn check() -> Result<result::CheckResult, Box<dyn Error>> {
         "windows" | "linux" => result.success_list.push("Supported operating system found".to_string()),
         _ => {
             result.all_ok = false;
-            result.error_list.push(format!("Only Windows and Linux supported as operating system. Found '{}'", env::consts::OS));
+            result
+                .error_list
+                .push(format!("Only Windows and Linux supported as operating system. Found '{}'", env::consts::OS));
         }
     }
 
@@ -57,9 +59,13 @@ pub fn check() -> Result<result::CheckResult, Box<dyn Error>> {
                 let found = captures.get_match().as_str().trim();
                 if captures[1].parse::<usize>().unwrap_or_default() < MINIMUM_JAVA_VERSION {
                     result.all_ok = false;
-                    result.error_list.push(format!("Installed Java version too low. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
+                    result.error_list.push(format!(
+                        "Installed Java version too low. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"
+                    ));
                 } else {
-                    result.success_list.push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
+                    result
+                        .success_list
+                        .push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
                 }
             }
             None => {

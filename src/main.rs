@@ -12,7 +12,7 @@
 //! Run `survey-tool-cli help` to show the help page
 
 use colored::Colorize;
-use std::{error::Error, process::exit};
+use std::process::exit;
 
 use clap::{Parser, Subcommand};
 use survey_tool_cli::*;
@@ -82,7 +82,7 @@ fn main() {
     }
 }
 
-fn display_check_result(result: Result<CheckResult, Box<dyn Error>>, verbose: bool) {
+fn display_check_result(result: Result<CheckResult, STCError>, verbose: bool) {
     match result {
         Err(err) => {
             println!("{} {}", "Error:".red(), err);

@@ -5,8 +5,9 @@
 //!
 //! As the Survey Tool is a Kotlin JVM application with Compose runtime, some restrictions apply.
 
+use crate::models::error;
 use crate::models::result;
-use std::{error::Error, fs, path::Path};
+use std::{fs, path::Path};
 
 // For now, the schema.json is embedded in the app.
 // Even more, the logic in the actual survey tool is not based on the schema.
@@ -14,8 +15,8 @@ use std::{error::Error, fs, path::Path};
 static SCHEMA: &str = include_str!("schema.json");
 
 /// check a given file for correctness
-pub fn check(file: &Path) -> Result<result::CheckResult, Box<dyn Error>> {
-    //check file existsD
+pub fn check(file: &Path) -> Result<result::CheckResult, error::STCError> {
+    //check file exists
     if !fs::exists(file)? {
         let mut ret = result::CheckResult::not_ok();
         ret.error_list.push("File not found".to_string());
@@ -28,6 +29,7 @@ pub fn check(file: &Path) -> Result<result::CheckResult, Box<dyn Error>> {
         ret.error_list.push("File has no extension (.yaml or .yml needed)".to_string());
         return Ok(ret);
     };
+    let ext = ext.to_ascii_lowercase();
     if ext != "yaml" && ext != "yml" {
         let mut ret = result::CheckResult::not_ok();
         ret.error_list.push("File has no Yaml extension (.yaml or .yml)".to_string());
@@ -40,7 +42,10 @@ pub fn check(file: &Path) -> Result<result::CheckResult, Box<dyn Error>> {
     //check available documents
     if instances.len() < 2 {
         let mut ret = result::CheckResult::not_ok();
-        ret.error_list.push(format!("Found only {} documents in yaml. At least two (survey header and one page) are needed", instances.len()));
+        ret.error_list.push(format!(
+            "Found only {} documents in yaml. At least two (survey header and one page) are needed",
+            instances.len()
+        ));
         return Ok(ret);
     }
 
@@ -55,7 +60,13 @@ pub fn check(file: &Path) -> Result<result::CheckResult, Box<dyn Error>> {
     Ok(result)
 }
 
-fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validator, result: &mut result::CheckResult, document: usize, file: &Path) -> Result<(), Box<dyn Error>> {
+fn check_document(
+    instance: &serde_json::Value,
+    validator: &jsonschema::Validator,
+    result: &mut result::CheckResult,
+    document: usize,
+    file: &Path,
+) -> Result<(), error::STCError> {
     let evaluation = validator.evaluate(instance);
 
     if evaluation.flag().valid {
@@ -78,36 +89,37 @@ fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validato
     }
 }
 
-fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, document: usize, template: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, document: usize, template: &Path) -> Result<(), error::STCError> {
     const FILE_POINTERS: [&str; 3] = [
         "/background_image",
         "/image", //maps survey level image and page image element
         "/score/leaderboard/background_image",
     ];
 
-    //TODO: need to search based on template file
-
     // check for no content images
     for p in FILE_POINTERS {
-        if let Some(serde_json::Value::String(file)) = instance.pointer(p) {
-            if !fs::exists(template.parent().unwrap().join(file))? {
-                result.all_ok = false;
-                result.error_list.push(format!("File '{file}', referenced at '{p}', not found"));
-            }
+        if let Some(serde_json::Value::String(file)) = instance.pointer(p)
+            && !fs::exists(template.parent().unwrap().join(file))?
+        {
+            result.all_ok = false;
+            result.error_list.push(format!("File '{file}', referenced at '{p}', not found"));
         }
     }
 
     // check for information block image
     if let Some(serde_json::Value::Array(array)) = instance.pointer("/content") {
         for (i, c) in array.iter().enumerate() {
-            if let serde_json::Value::Object(o) = c {
-                if let Some(serde_json::Value::String(s)) = o.get("type") && s == "information" {
-                    if let Some(serde_json::Value::String(file)) = o.get("image") {
-                        if !fs::exists(template.parent().unwrap().join(file))? {
-                            result.all_ok = false;
-                            result.error_list.push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
-                        }
-                    }
+            if let serde_json::Value::Object(o) = c
+                && let Some(serde_json::Value::String(s)) = o.get("type")
+                && s == "information"
+            {
+                if let Some(serde_json::Value::String(file)) = o.get("image")
+                    && !fs::exists(template.parent().unwrap().join(file))?
+                {
+                    result.all_ok = false;
+                    result
+                        .error_list
+                        .push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
                 }
             }
         }

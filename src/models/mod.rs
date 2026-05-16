@@ -2,7 +2,7 @@ pub mod survey_config;
 
 pub mod result {
 
-    /// Result for check operations 
+    /// Result for check operations
     #[derive(Debug, PartialEq)]
     pub struct CheckResult {
         /// simple flag to specify if the operation encountered any errors/problems
@@ -36,6 +36,68 @@ pub mod result {
                 error_list: Vec::new(),
                 output: None,
             }
+        }
+    }
+}
+
+pub mod error {
+    use std::error;
+    use std::fmt;
+
+    #[derive(Debug)]
+    pub enum STCError {
+        Unspecified,
+        YAML(serde_saphyr::Error),
+        SchemaLoad(serde_json::Error),
+        SchemaValidation(jsonschema::ValidationError<'static>),
+        IO(std::io::Error),
+    }
+
+    impl fmt::Display for STCError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                STCError::Unspecified => write!(f, "Unspecified error"),
+                STCError::YAML(error) => write!(f, "YAML error: {}", error),
+                STCError::SchemaLoad(error) => write!(f, "Error loading schema: {}", error),
+                STCError::SchemaValidation(error) => write!(f, "Error on schema validation: {}", error),
+                STCError::IO(error) => write!(f, "IO error: {}", error),
+            }
+        }
+    }
+
+    impl error::Error for STCError {
+        fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+            match self {
+                STCError::Unspecified => None,
+                STCError::YAML(error) => Some(error),
+                STCError::SchemaLoad(error) => Some(error),
+                STCError::SchemaValidation(error) => Some(error),
+                STCError::IO(error) => Some(error),
+            }
+        }
+    }
+
+    impl From<std::io::Error> for STCError {
+        fn from(value: std::io::Error) -> Self {
+            STCError::IO(value)
+        }
+    }
+
+    impl From<serde_saphyr::Error> for STCError {
+        fn from(value: serde_saphyr::Error) -> Self {
+            STCError::YAML(value)
+        }
+    }
+
+    impl From<serde_json::Error> for STCError {
+        fn from(value: serde_json::Error) -> Self {
+            STCError::SchemaLoad(value)
+        }
+    }
+
+    impl From<jsonschema::ValidationError<'static>> for STCError {
+        fn from(value: jsonschema::ValidationError<'static>) -> Self {
+            STCError::SchemaValidation(value)
         }
     }
 }

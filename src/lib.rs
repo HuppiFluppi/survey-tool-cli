@@ -9,23 +9,26 @@
 //!
 //! This lib crate provides the functionality to the binary crate in the same repository.
 
-use std::error::Error;
 use std::path::Path;
 
 mod check;
-mod edit;
+mod config;
 mod models;
 mod setup;
 
+pub use models::error::STCError;
 pub use models::result::CheckResult;
 
+use crate::models::error;
+pub use crate::models::survey_config::{SurveyConfig, SurveyPage};
+
 /// Run setup checks to see if local machine can execute the survey tool application
-pub fn setup_check() -> Result<CheckResult, Box<dyn Error>> {
+pub fn setup_check() -> Result<CheckResult, error::STCError> {
     setup::check()
 }
 
 /// Validate an existing survey tool configuration file/yaml.
 /// file: path to the configuration file
-pub fn config_check(file: &str) -> Result<CheckResult, Box<dyn Error>> {
+pub fn config_check(file: &str) -> Result<CheckResult, error::STCError> {
     check::check(Path::new(file))
 }
