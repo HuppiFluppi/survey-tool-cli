@@ -2,7 +2,7 @@
 name: Release
 on:
   push:
-    tags: [ '[0-9].[0-9]+.[0-9]+' ]
+    tags: ['[0-9].[0-9]+.[0-9]+']
 
 env:
   CARGO_TERM_COLOR: always
@@ -39,18 +39,23 @@ jobs:
       - name: Rename release executable
         run: mv target/release/survey-tool-cli "target/release/survey-tool-cli-$GITHUB_REF_NAME-linux"
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Survey Tool Cli Linux
           path: "target/release/survey-tool-cli-${{ github.ref_name }}-linux"
+      - name: Create Changelog
+        run: |
+          npm install -g conventional-changelog
+          conventional-changelog -r2
+          cat CHANGELOG.md
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create $GITHUB_REF_NAME --verify-tag --generate-notes -t $GITHUB_REF_NAME "target/release/survey-tool-cli-$GITHUB_REF_NAME-linux"
+        run: gh release create $GITHUB_REF_NAME --verify-tag --generate-notes -F CHANGELOG.md -t $GITHUB_REF_NAME "target/release/survey-tool-cli-$GITHUB_REF_NAME-linux"
 
   release-windows:
     runs-on: windows-latest
-    needs: [ 'release-linux' ]
+    needs: ['release-linux']
     permissions:
       contents: write
     steps:
@@ -75,7 +80,7 @@ jobs:
       - name: Rename release executable
         run: mv target/release/survey-tool-cli.exe "target/release/survey-tool-cli-$env:GITHUB_REF_NAME-windows.exe"
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Survey Tool Cli Windows
           path: "target/release/survey-tool-cli-${{ github.ref_name }}-windows.exe"

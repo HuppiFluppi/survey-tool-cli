@@ -1,6 +1,7 @@
 # Survey Tool CLI
 
-A command-line utility for managing and validating [Survey Tool](https://github.com/HuppiFluppi/survey-tool) configuration files. This Rust-based CLI tool helps you check survey configurations for correctness and verify system prerequisites for running the Survey Tool application.
+A command-line utility for managing and validating [Survey Tool](https://github.com/HuppiFluppi/survey-tool) configuration files. 
+This Rust-based CLI tool helps you check survey configurations for correctness and verify system prerequisites for running the Survey Tool application.
 
 ## Table of Contents
 
@@ -35,7 +36,7 @@ The tool helps ensure your survey configurations are valid before loading them i
 - **System Checks** - Verify prerequisites for running Survey Tool
 - **Error Reporting** - Detailed error messages with colored output
 - **Verbose Mode** - Optional detailed output for debugging
-- **Cross-platform** - Works on Windows, macOS, and Linux (only compiled for Windows+Linux)
+- **Cross-platform** - Works on Windows and Linux (should work on macOS, but not tested)
 
 ## Installation
 
@@ -94,6 +95,7 @@ survey-tool-cli --help
 - **Regex parsing**: regex 1.12
 
 ## Disclaimer
+
 This software is provided "as is", without warranty of any kind. The author is certain, this software could be done more concise, prettier and overall better.
 The todos are plenty and bugs are likely hiding. Use at your own risk and have fun. This is a learning and experiment project.
 
