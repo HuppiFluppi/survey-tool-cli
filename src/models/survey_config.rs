@@ -3,27 +3,74 @@
 //!
 //! Translated from the survey-tool kotlin project and therefore not really rustacean
 
+use core::fmt;
+use serde::{Deserialize, Serialize};
+
+// helper functions to be used for serde default till https://github.com/serde-rs/serde/pull/3066 is available
+fn bool_true() -> bool {
+    true
+}
+fn bool_false() -> bool {
+    false
+}
+fn survey_type() -> SurveyType {
+    SurveyType::Survey
+}
+fn data_question_type() -> DataQuestionType {
+    DataQuestionType::Name
+}
+fn datetime_type() -> DateTimeType {
+    DateTimeType::DateTime
+}
+fn choice_limit() -> usize {
+    2
+}
+fn likert_end() -> f64 {
+    1.0
+}
+fn rating_level() -> usize {
+    5
+}
+fn rating_symbol() -> RatingSymbol {
+    RatingSymbol::Star
+}
+fn rating_gradient() -> RatingColorGradient {
+    RatingColorGradient::None
+}
+
 /// Root configuration model describing a single survey or quiz.
 /// This immutable data class is typically created by parsing a configuration source (e.g. via YAML)
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SurveyConfig {
     pub title: String,
     pub description: String,
+    #[serde(rename = "type", default = "survey_type")]
     pub survey_type: SurveyType,
-    pub image_path: Option<String>,
-    pub background_image_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_image: Option<String>,
+    #[serde(default)]
     pub score: ScoreSettings,
+    #[serde(skip)]
     pub pages: Vec<SurveyPage>,
 }
 
 impl SurveyConfig {
-    pub fn new(title: String, description: String, survey_type: Option<SurveyType>, image_path: Option<String>, background_image_path: Option<String>, score: Option<ScoreSettings>) -> SurveyConfig {
+    pub fn new(
+        title: String,
+        description: String,
+        survey_type: Option<SurveyType>,
+        image: Option<String>,
+        background_image: Option<String>,
+        score: Option<ScoreSettings>,
+    ) -> SurveyConfig {
         SurveyConfig {
             title,
             description,
             survey_type: survey_type.unwrap_or(SurveyType::Survey),
-            image_path,
-            background_image_path,
+            image,
+            background_image,
             score: score.unwrap_or_default(),
             pages: Vec::new(),
         }
@@ -38,14 +85,25 @@ impl SurveyConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SurveyType {
     Survey,
     Quiz,
 }
 
+impl fmt::Display for SurveyType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SurveyType::Survey => write!(f, "survey"),
+            SurveyType::Quiz => write!(f, "quiz"),
+        }
+    }
+}
+
 /// Global scoring options for a survey/quiz.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ScoreSettings {
     pub show_question_scores: bool,
     pub show_leaderboard: bool,
@@ -55,85 +113,77 @@ pub struct ScoreSettings {
 impl Default for ScoreSettings {
     /// Create settings with default values
     fn default() -> ScoreSettings {
-        ScoreSettings {
-            show_question_scores: false,
-            show_leaderboard: true,
-            leaderboard: LeaderboardSettings::default(),
-        }
+        ScoreSettings { show_question_scores: false, show_leaderboard: true, leaderboard: LeaderboardSettings::default() }
     }
 }
 
 impl ScoreSettings {
     pub fn new(show_question_scores: bool, show_leaderboard: bool, leaderboard: LeaderboardSettings) -> ScoreSettings {
-        ScoreSettings {
-            show_question_scores,
-            show_leaderboard,
-            leaderboard,
-        }
+        ScoreSettings { show_question_scores, show_leaderboard, leaderboard }
     }
 }
 
 /// Leaderboard configuration details.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct LeaderboardSettings {
     pub show_scores: bool,
     pub show_placeholder: bool,
     pub limit: usize,
-    pub background_image_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub background_image: Option<String>,
 }
 
 impl Default for LeaderboardSettings {
     /// Create settings with default values
     fn default() -> LeaderboardSettings {
-        LeaderboardSettings {
-            show_scores: true,
-            show_placeholder: true,
-            limit: 10,
-            background_image_path: None
-        }
+        LeaderboardSettings { show_scores: true, show_placeholder: true, limit: 10, background_image: None }
     }
 }
 
 impl LeaderboardSettings {
-    pub fn new(show_scores: bool, show_placeholder: bool, limit: usize, background_image_path: Option<String>) -> LeaderboardSettings {
-        LeaderboardSettings {
-            show_scores,
-            show_placeholder,
-            limit,
-            background_image_path
-        }
+    pub fn new(show_scores: bool, show_placeholder: bool, limit: usize, background_image: Option<String>) -> LeaderboardSettings {
+        LeaderboardSettings { show_scores, show_placeholder, limit, background_image }
+    }
+}
+
+/// Settings for conditional display
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConditionalSettings {
+    pub key: String,
+    pub values: Vec<String>,
+}
+
+impl ConditionalSettings {
+    pub fn new(key: String) -> ConditionalSettings {
+        ConditionalSettings { key, values: Vec::new() }
     }
 }
 
 /// A single page in the survey.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SurveyPage {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    pub image_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conditional: Option<ConditionalSettings>,
     pub content: Vec<SurveyPageContent>,
 }
 
 impl Default for SurveyPage {
     /// Create page with default values
     fn default() -> SurveyPage {
-        SurveyPage {
-            title: None,
-            description: None,
-            image_path: None,
-            content: Vec::new(),
-        }
+        SurveyPage { title: None, description: None, image: None, conditional: None, content: Vec::new() }
     }
 }
 
 impl SurveyPage {
-    pub fn new(title: Option<String>, description: Option<String>, image_path: Option<String>) -> SurveyPage {
-        SurveyPage {
-            title,
-            description,
-            image_path,
-            content: Vec::new(),
-        }
+    pub fn new(title: Option<String>, description: Option<String>, image: Option<String>, conditional: Option<ConditionalSettings>) -> SurveyPage {
+        SurveyPage { title, description, image, conditional, content: Vec::new() }
     }
 
     pub fn add_content(&mut self, content: SurveyPageContent) {
@@ -145,117 +195,253 @@ impl SurveyPage {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SurveyPageContentHeader {
-    pub content_type: SurveyContentType,
+    // While type is part of the header, we need to use serde internally tagged enum representation to properly determine the enum variant.
+    // This would clash with this definition. Ergo, type will end up in the yaml, but based on SurveyPageContent config and enum variant
+    // #[serde(rename = "type")]
+    // pub content_type: SurveyContentType,
     pub title: String,
+    #[serde(default = "bool_true")]
     pub required: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conditional: Option<ConditionalSettings>,
 }
 
-#[derive(Debug)]
-pub enum SurveyContentType {
-    Text,
-    Choice,
-    Data,
-    Rating,
-    Likert,
-    Information,
-    DateTime,
-    Slider,
-}
+// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+// #[serde(rename_all = "lowercase")]
+// pub enum SurveyContentType {
+//     Text,
+//     Choice,
+//     Data,
+//     Rating,
+//     Likert,
+//     Information,
+//     DateTime,
+//     Slider,
+// }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase", tag = "type")]
 pub enum SurveyPageContent {
     /// Free-text question.
-    TextQuestion {
+    Text {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        multiline: bool,
-        pattern: Option<String>,
-        score: Option<usize>,
-        correct_answer: Option<String>,
-        correct_answer_pattern: Option<String>,
-        correct_answer_list: Option<Vec<String>>,
+        config: TextConfig,
     },
 
     /// Choice-based question.
-    ChoiceQuestion {
+    Choice {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        multiple: bool,
-        limit: usize,
-        dropdown: bool,
-        horizontal: bool,
-        choices: Vec<ChoiceItem>,
+        config: ChoiceConfig,
     },
 
     /// Question for capturing participant’s details
-    DataQuestion {
+    Data {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        data_type: DataQuestionType,
-        validation_pattern: Option<String>,
-        use_for_leaderboard: bool,
+        config: DataConfig,
     },
 
     /// DateTime question.
-    DateTimeQuestion {
+    DateTime {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        input_type: DateTimeType,
-        initial_selected_time: Option<String>,
-        initial_selected_date: Option<String>,
-        score: Option<usize>,
-        correct_time_answer: Option<String>,
-        correct_date_answer: Option<String>,
+        config: DateTimeConfig,
     },
 
     /// Numeric rating question.
-    RatingQuestion {
+    Rating {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        level: usize,
-        symbol: RatingSymbol,
-        color_gradient: RatingColorGradient,
+        config: RatingConfig,
     },
 
     /// Slider question.
-    SliderQuestion {
+    Slider {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        range: bool,
-        start: f64,
-        end: f64,
-        steps: usize,
-        show_decimals: bool,
-        unit: Option<String>,
-        score: Option<usize>,
-        correct_answer: Option<f64>,
+        config: SliderConfig,
     },
 
     /// Likert scale question.
-    LikertQuestion {
+    Likert {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
-
-        choices: Vec<String>,
-        statements: Vec<LikertStatement>,
+        config: LikertConfig,
     },
-    InformationBlock {
+
+    Information {
+        #[serde(flatten)]
         header: SurveyPageContentHeader,
 
+        #[serde(skip_serializing_if = "Option::is_none")]
         description: Option<String>,
-        image_path: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        image: Option<String>,
     },
 }
 
-#[derive(Debug)]
+impl SurveyPageContent {
+    pub fn type_string(&self) -> String {
+        match self {
+            SurveyPageContent::Text { .. } => "text".to_string(),
+            SurveyPageContent::Choice { .. } => "choice".to_string(),
+            SurveyPageContent::Data { .. } => "data".to_string(),
+            SurveyPageContent::DateTime { .. } => "datetime".to_string(),
+            SurveyPageContent::Rating { .. } => "rating".to_string(),
+            SurveyPageContent::Slider { .. } => "slider".to_string(),
+            SurveyPageContent::Likert { .. } => "likert".to_string(),
+            SurveyPageContent::Information { .. } => "information".to_string(),
+        }
+    }
+
+    pub fn get_header(&self) -> &SurveyPageContentHeader {
+        match self {
+            SurveyPageContent::Text { header, config: _ } => header,
+            SurveyPageContent::Choice { header, config: _ } => header,
+            SurveyPageContent::Data { header, config: _ } => header,
+            SurveyPageContent::DateTime { header, config: _ } => header,
+            SurveyPageContent::Rating { header, config: _ } => header,
+            SurveyPageContent::Slider { header, config: _ } => header,
+            SurveyPageContent::Likert { header, config: _ } => header,
+            SurveyPageContent::Information { header, description: _, image: _ } => header,
+        }
+    }
+
+    pub fn format_config(&self) -> String {
+        match self {
+            SurveyPageContent::Text { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::Choice { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::Data { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::DateTime { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::Rating { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::Slider { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::Likert { config, .. } => SurveyPageContent::format_fields(config),
+            SurveyPageContent::Information { description, image, .. } => {
+                let mut parts = Vec::new();
+                if description.is_some() {
+                    parts.push(format!("description: {}", description.as_deref().unwrap()));
+                } 
+                if image.is_some() {
+                    parts.push(format!("image: {}", image.as_deref().unwrap()));
+                }
+                parts.join("\n")
+            }
+        }
+    }
+
+    fn format_fields<T: Serialize>(value: &T) -> String {
+        serde_saphyr::to_string(value).unwrap_or_default()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TextConfig {
+    #[serde(default = "bool_false")]
+    pub multiline: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pattern: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correct_answer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correct_answer_pattern: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correct_answer_list: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DataConfig {
+    #[serde(default = "data_question_type")]
+    pub datatype: DataQuestionType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validation_pattern: Option<String>,
+    #[serde(default = "bool_true")]
+    pub use_for_leaderboard: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DateTimeConfig {
+    #[serde(default = "datetime_type")]
+    pub input_type: DateTimeType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub initial_selected_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub initial_selected_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correct_time_answer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correct_date_answer: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ChoiceConfig {
+    #[serde(default = "bool_false")]
+    pub multiple: bool,
+    #[serde(default = "choice_limit")]
+    pub limit: usize,
+    #[serde(default = "bool_false")]
+    pub dropdown: bool,
+    #[serde(default = "bool_false")]
+    pub horizontal: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conditional_key: Option<String>,
+    pub choices: Vec<ChoiceItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LikertConfig {
+    pub choices: Vec<String>,
+    pub statements: Vec<LikertStatement>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RatingConfig {
+    #[serde(default = "rating_level")]
+    pub level: usize,
+    #[serde(default = "rating_symbol")]
+    pub symbol: RatingSymbol,
+    #[serde(default = "rating_gradient")]
+    pub color_gradient: RatingColorGradient,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SliderConfig {
+    #[serde(default = "bool_false")]
+    pub range: bool,
+    #[serde(default)]
+    pub start: f64,
+    #[serde(default = "likert_end")]
+    pub end: f64,
+    #[serde(default)]
+    pub steps: usize,
+    #[serde(default = "bool_false")]
+    pub show_decimals: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correct_answer: Option<f64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChoiceItem {
     pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<usize>,
+    #[serde(default = "bool_false")]
     pub correct: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum DataQuestionType {
     Name,
     Email,
@@ -266,14 +452,16 @@ pub enum DataQuestionType {
     Birthday,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum DateTimeType {
     Date,
     Time,
     DateTime,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum RatingSymbol {
     Star,
     Heart,
@@ -282,19 +470,23 @@ pub enum RatingSymbol {
     Number,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum RatingColorGradient {
     None,
     Red2Green,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LikertStatement {
     pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub correct_choice: Option<String>,
 }
 
+// ------- Tests
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,14 +527,10 @@ mod tests {
     #[test]
     fn test_survey_page_add_remove_content() {
         let mut page = SurveyPage::default();
-        let content = SurveyPageContent::InformationBlock {
-            header: SurveyPageContentHeader {
-                content_type: SurveyContentType::Information,
-                title: "Info".to_string(),
-                required: false,
-            },
+        let content = SurveyPageContent::Information {
+            header: SurveyPageContentHeader { title: "Info".to_string(), required: false, conditional: None },
             description: None,
-            image_path: None,
+            image: None,
         };
         page.add_content(content);
         assert_eq!(page.content.len(), 1);

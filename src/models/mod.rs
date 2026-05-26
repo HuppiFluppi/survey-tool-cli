@@ -20,22 +20,12 @@ pub mod result {
     impl CheckResult {
         /// create an empty CheckResult with `all_ok` true
         pub fn all_ok() -> CheckResult {
-            CheckResult {
-                all_ok: true,
-                success_list: Vec::new(),
-                error_list: Vec::new(),
-                output: None,
-            }
+            CheckResult { all_ok: true, success_list: Vec::new(), error_list: Vec::new(), output: None }
         }
 
         /// create an empty CheckResult with `all_ok` false
         pub fn not_ok() -> CheckResult {
-            CheckResult {
-                all_ok: false,
-                success_list: Vec::new(),
-                error_list: Vec::new(),
-                output: None,
-            }
+            CheckResult { all_ok: false, success_list: Vec::new(), error_list: Vec::new(), output: None }
         }
     }
 }
@@ -48,7 +38,9 @@ pub mod error {
     #[derive(Debug)]
     pub enum STCError {
         Unspecified,
-        YAML(serde_saphyr::Error),
+        YAMLParse(serde_saphyr::Error),
+        YAMLFormat(String),
+        YAMLSerialization(serde_saphyr::ser::Error),
         SchemaLoad(serde_json::Error),
         SchemaValidation(jsonschema::ValidationError<'static>),
         IO(std::io::Error),
@@ -58,7 +50,9 @@ pub mod error {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 STCError::Unspecified => write!(f, "Unspecified error"),
-                STCError::YAML(error) => write!(f, "YAML error: {}", error),
+                STCError::YAMLParse(error) => write!(f, "YAML parse error: {}", error),
+                STCError::YAMLFormat(message) => write!(f, "YAML format error: {}", message),
+                STCError::YAMLSerialization(error) => write!(f, "YAML serialization error: {}", error),
                 STCError::SchemaLoad(error) => write!(f, "Error loading schema: {}", error),
                 STCError::SchemaValidation(error) => write!(f, "Error on schema validation: {}", error),
                 STCError::IO(error) => write!(f, "IO error: {}", error),
@@ -70,7 +64,9 @@ pub mod error {
         fn source(&self) -> Option<&(dyn error::Error + 'static)> {
             match self {
                 STCError::Unspecified => None,
-                STCError::YAML(error) => Some(error),
+                STCError::YAMLParse(error) => Some(error),
+                STCError::YAMLFormat(_) => None,
+                STCError::YAMLSerialization(error) => Some(error),
                 STCError::SchemaLoad(error) => Some(error),
                 STCError::SchemaValidation(error) => Some(error),
                 STCError::IO(error) => Some(error),
@@ -86,7 +82,13 @@ pub mod error {
 
     impl From<serde_saphyr::Error> for STCError {
         fn from(value: serde_saphyr::Error) -> Self {
-            STCError::YAML(value)
+            STCError::YAMLParse(value)
+        }
+    }
+
+    impl From<serde_saphyr::ser::Error> for STCError {
+        fn from(value: serde_saphyr::ser::Error) -> Self {
+            STCError::YAMLSerialization(value)
         }
     }
 
