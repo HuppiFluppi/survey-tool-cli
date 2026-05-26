@@ -136,7 +136,7 @@
       "additionalProperties": false,
       "required": [
         "key",
-        "value"
+        "values"
       ],
       "properties": {
         "key": {
@@ -144,7 +144,7 @@
           "description": "A reference to an existing questions 'conditional_key'",
           "minLength": 3
         },
-        "value": {
+        "values": {
           "description": "A list of values that would enable this condition",
           "type": "array",
           "minItems": 1,
