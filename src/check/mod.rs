@@ -40,10 +40,7 @@ pub fn check(file: &Path) -> Result<result::CheckResult, error::STCError> {
     //check available documents
     if instances.len() < 2 {
         let mut ret = result::CheckResult::not_ok();
-        ret.error_list.push(format!(
-            "Found only {} documents in yaml. At least two (survey header and one page) are needed",
-            instances.len()
-        ));
+        ret.error_list.push(format!("Found only {} documents in yaml. At least two (survey header and one page) are needed", instances.len()));
         return Ok(ret);
     }
 
@@ -74,13 +71,7 @@ fn check_document(
         result.all_ok = false;
 
         evaluation.iter_errors().for_each(|x| {
-            result.error_list.push(format!(
-                "{} (document {}, loc {} - schema {})",
-                x.error,
-                document + 1,
-                x.instance_location,
-                x.schema_location
-            ))
+            result.error_list.push(format!("{} (document {}, loc {} - schema {})", x.error, document + 1, x.instance_location, x.schema_location))
         });
 
         Ok(())
@@ -115,9 +106,7 @@ fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, d
                     && !fs::exists(template.parent().unwrap().join(file))?
                 {
                     result.all_ok = false;
-                    result
-                        .error_list
-                        .push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
+                    result.error_list.push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
                 }
             }
         }

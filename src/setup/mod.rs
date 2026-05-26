@@ -21,9 +21,7 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
         "windows" | "linux" => result.success_list.push("Supported operating system found".to_string()),
         _ => {
             result.all_ok = false;
-            result
-                .error_list
-                .push(format!("Only Windows and Linux supported as operating system. Found '{}'", env::consts::OS));
+            result.error_list.push(format!("Only Windows and Linux supported as operating system. Found '{}'", env::consts::OS));
         }
     }
 
@@ -58,13 +56,9 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
                 let found = captures.get_match().as_str().trim();
                 if captures[1].parse::<usize>().unwrap_or_default() < MINIMUM_JAVA_VERSION {
                     result.all_ok = false;
-                    result.error_list.push(format!(
-                        "Installed Java version too low. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"
-                    ));
+                    result.error_list.push(format!("Installed Java version too low. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
                 } else {
-                    result
-                        .success_list
-                        .push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
+                    result.success_list.push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
                 }
             }
             None => {
