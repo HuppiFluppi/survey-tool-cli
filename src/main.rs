@@ -12,6 +12,7 @@
 //! Run `survey-tool-cli help` to show the help page
 
 use colored::Colorize;
+use inquire::required;
 use std::process::exit;
 
 use clap::{Parser, Subcommand};
@@ -54,7 +55,7 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum ConfigSubcommand {
-    /// List the survey contents
+    /// List the contents of a survey config file
     #[command(visible_alias = "ls")]
     List {
         /// path traversing the config structure. e.g. '1/1' for first page, first element'
@@ -69,7 +70,7 @@ enum ConfigSubcommand {
         no_header: bool,
     },
 
-    /// Initialize a config file
+    /// Initialize a config file based on user input
     #[command(visible_alias = "in")]
     Init {
         /// Overwrite and truncate an existing file
@@ -150,6 +151,149 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
     }
 }
 
+fn init_cmd(file: &str, overwrite: bool) {
+    println!();
+    println!("📝 {}", "Enter survey information".bold());
+    println!();
+
+    //select survey type
+    let survey_type = match inquire::Select::new("Which type do you want?", vec![SurveyType::Survey, SurveyType::Quiz]).prompt() {
+        Ok(v) => v,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        }
+    };
+
+    //input survey/quiz title
+    let title = match inquire::Text::new(&format!("Enter {survey_type} title:")).with_validator(required!("Title is required")).prompt() {
+        Ok(v) => v,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        }
+    };
+
+    //input survey/quiz description
+    let desc = match inquire::Text::new(&format!("Enter {survey_type} description:")).with_validator(required!("Description is required")).prompt() {
+        Ok(v) => v,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        }
+    };
+
+    //input optional image
+    let image = match inquire::Text::new("Enter optional image path (skip with ESC):").prompt_skippable() {
+        Ok(str) => str.filter(|t| !t.trim().is_empty()),
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        }
+    };
+
+    //input optional background image
+    let background_image = match inquire::Text::new("Enter optional background image path (skip with ESC):").prompt_skippable() {
+        Ok(str) => str.filter(|t| !t.trim().is_empty()),
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        }
+    };
+
+    //get score info on quizes
+    let score: Option<ScoreSettings>;
+    if matches!(survey_type, SurveyType::Quiz) {
+        match inquire::Confirm::new("Do you want to use the default score settings?").with_default(true).prompt() {
+            Ok(true) => score = Some(ScoreSettings::default()),
+            Ok(false) => {
+                let show_question_scores = match inquire::Confirm::new("Show scores on each question?").with_default(false).prompt() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        println!(" {} {}", "Error: ".red(), e);
+                        return;
+                    }
+                };
+                let show_leaderboard = match inquire::Confirm::new("Show leaderboard/highscore?").with_default(true).prompt() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        println!(" {} {}", "Error: ".red(), e);
+                        return;
+                    }
+                };
+
+                let leaderboard = if show_leaderboard {
+                    let show_scores = match inquire::Confirm::new("Show player scores on leaderboard?").with_default(true).prompt() {
+                        Ok(v) => v,
+                        Err(e) => {
+                            println!(" {} {}", "Error: ".red(), e);
+                            return;
+                        }
+                    };
+                    let show_placeholder = match inquire::Confirm::new("Show placeholder instead of empty rows?").with_default(true).prompt() {
+                        Ok(v) => v,
+                        Err(e) => {
+                            println!(" {} {}", "Error: ".red(), e);
+                            return;
+                        }
+                    };
+                    let limit: u8 = match inquire::CustomType::new("Number of participants shown on leaderboard?")
+                        .with_error_message("Please type a valid number")
+                        .prompt()
+                    {
+                        Ok(v) => v,
+                        Err(e) => {
+                            println!(" {} {}", "Error: ".red(), e);
+                            return;
+                        }
+                    };
+                    let background_image = match inquire::Text::new("Enter optional leaderboard background image path (skip with ESC):").prompt_skippable() {
+                        Ok(v) => v.filter(|t| !t.trim().is_empty()),
+                        Err(e) => {
+                            println!(" {} {}", "Error: ".red(), e);
+                            return;
+                        }
+                    };
+
+                    LeaderboardSettings::new(show_scores, show_placeholder, limit.into(), background_image)
+                } else {
+                    LeaderboardSettings::default()
+                };
+
+                score = Some(ScoreSettings::new(show_question_scores, show_leaderboard, leaderboard))
+            }
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            }
+        }
+    } else {
+        score = None;
+    }
+
+    //input first page
+    println!();
+    println!("  {}", "Enter first page information".bold());
+    println!();
+
+    let page = match main_helper::input_survey_page() {
+        Ok(v) => v,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        }
+    };
+
+    //create and write config
+    let mut config = SurveyConfig::new(title, desc, Some(survey_type), image, background_image, score);
+    config.add_page(page);
+
+    match save_config(file, overwrite, &config) {
+        Ok(_) => println!(" 👍 successfully init file. You can now add content(questions) and more pages"),
+        Err(e) => println!(" ❌ {} {}", "Error:".red(), e),
+    }
+}
+
 fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: bool) {
     //get config
     let config = match load_config(file) {
@@ -168,7 +312,7 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
         //extract and check path elements
         let split_path: Vec<&str> = path.split_terminator(['/', '\\']).collect();
         if split_path.len() > 2 {
-            println!(" {} path argument in wrong format. Should be one or two numbers, specifying the page and element, separated by '/'", "Error:".red(), );
+            println!(" {} path argument in wrong format. Should be one or two numbers, specifying the page and element, separated by '/'", "Error:".red(),);
             return;
         }
         let Ok(page_select) = split_path[0].parse::<usize>() else {

@@ -1,3 +1,5 @@
+use colored::Colorize;
+use inquire::required;
 use survey_tool_cli::*;
 
 pub struct ConfigTOC {
@@ -68,4 +70,41 @@ pub fn has_conditionals(config: &SurveyConfig) -> bool {
         }
     }
     false
+}
+
+pub fn input_survey_page() -> Result<SurveyPage, inquire::InquireError> {
+    //input page title
+    let title = inquire::Text::new("Enter page title (skip with ESC):").prompt_skippable()?.filter(|t| !t.trim().is_empty());
+
+    //input page description
+    let desc = inquire::Text::new("Enter page description (skip with ESC):").prompt_skippable()?.filter(|t| !t.trim().is_empty());
+
+    //input optional image
+    let image = inquire::Text::new("Enter optional image path (skip with ESC):").prompt_skippable()?.filter(|t| !t.trim().is_empty());
+
+    Ok(SurveyPage::new(title, desc, image, input_conditional_setting()?))
+}
+
+pub fn input_conditional_setting() -> Result<Option<ConditionalSettings>, inquire::InquireError> {
+    let conditional = inquire::Confirm::new("Make conditional?").with_default(false).prompt()?;
+    if !conditional {
+        return Ok(None);
+    }
+
+    //HINT key and value candidates could be prefilled
+    let key = inquire::Text::new("Enter conditional key:").with_validator(required!("Conditional key is required")).prompt()?;
+
+    let mut values = Vec::new();
+    loop {
+        match inquire::Text::new("Enter conditional value (stop with ESC):").prompt_skippable()?.filter(|t| !t.trim().is_empty()) {
+            None if values.is_empty() => println!(" {} at least one value needed!", "Error:".red()),
+            None => break,
+            Some(v) => values.push(v),
+        }
+    }
+
+    let mut cond = ConditionalSettings::new(key);
+    cond.values = values;
+
+    Ok(Some(cond))
 }

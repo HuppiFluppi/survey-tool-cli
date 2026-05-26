@@ -50,8 +50,8 @@ pub struct SurveyConfig {
     pub image: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub background_image: Option<String>,
-    #[serde(default)]
-    pub score: ScoreSettings,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<ScoreSettings>,
     #[serde(skip)]
     pub pages: Vec<SurveyPage>,
 }
@@ -65,15 +65,7 @@ impl SurveyConfig {
         background_image: Option<String>,
         score: Option<ScoreSettings>,
     ) -> SurveyConfig {
-        SurveyConfig {
-            title,
-            description,
-            survey_type: survey_type.unwrap_or(SurveyType::Survey),
-            image,
-            background_image,
-            score: score.unwrap_or_default(),
-            pages: Vec::new(),
-        }
+        SurveyConfig { title, description, survey_type: survey_type.unwrap_or(SurveyType::Survey), image, background_image, score, pages: Vec::new() }
     }
 
     pub fn add_page(&mut self, page: SurveyPage) {
@@ -324,7 +316,7 @@ impl SurveyPageContent {
                 let mut parts = Vec::new();
                 if description.is_some() {
                     parts.push(format!("description: {}", description.as_deref().unwrap()));
-                } 
+                }
                 if image.is_some() {
                     parts.push(format!("image: {}", image.as_deref().unwrap()));
                 }
