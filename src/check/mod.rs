@@ -2,9 +2,9 @@
 //!
 //! Checks survey tool configuration files (yaml) for correctnes according to schema.
 //! The schema is embedded at build time.
-
 use crate::models::error;
 use crate::models::result;
+use std::collections::HashSet;
 use std::{fs, path::Path};
 
 // For now, the schema.json is embedded in the app.
@@ -47,35 +47,61 @@ pub fn check(file: &Path) -> Result<result::CheckResult, error::STCError> {
     //check documents
     let validator = jsonschema::validator_for(&serde_json::from_str(SCHEMA)?)?;
     let mut result = result::CheckResult::all_ok();
+    let mut conditionals = HashSet::new();
 
     for (i, x) in instances.iter().enumerate() {
-        check_document(x, &validator, &mut result, i, file)?;
+        check_document(x, &validator, &mut result, i, file, &mut conditionals)?;
     }
 
     Ok(result)
 }
 
-fn check_document(
-    instance: &serde_json::Value,
-    validator: &jsonschema::Validator,
-    result: &mut result::CheckResult,
-    document: usize,
-    file: &Path,
-) -> Result<(), error::STCError> {
+fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validator, result: &mut result::CheckResult, document_num: usize, file: &Path, conditionals: &mut HashSet<String>) -> Result<(), error::STCError> {
     let evaluation = validator.evaluate(instance);
 
     if evaluation.flag().valid {
-        check_files(instance, result, document, file)?;
+        check_files(instance, result, document_num, file)?;
+        check_conditionals(instance, result, document_num, conditionals)?;
         Ok(())
     } else {
         result.all_ok = false;
 
         evaluation.iter_errors().for_each(|x| {
-            result.error_list.push(format!("{} (document {}, loc {} - schema {})", x.error, document + 1, x.instance_location, x.schema_location))
+            result.error_list.push(format!("{} (document {}, loc {} - schema {})", x.error, document_num + 1, x.instance_location, x.schema_location))
         });
 
         Ok(())
     }
+}
+
+fn check_conditionals(instance: &serde_json::Value, result: &mut crate::CheckResult, document_num: usize, conditionals: &mut HashSet<String>) -> Result<(), error::STCError> {
+    //check for page conditional settings
+    if let Some(serde_json::Value::Object(obj)) = instance.pointer("/conditional")
+        && let Some(k) = obj.get("key") && let Some(key) = k.as_str()
+        && !conditionals.contains(key) {
+        result.all_ok = false;
+        result.error_list.push(format!("Conditional key {} for page not found (document {})", key, document_num + 1))
+    }
+
+    //check for conditional keys & content conditional settings 
+    if let Some(serde_json::Value::Array(content)) = instance.pointer("/content") {
+        for v in content.iter() {
+            //add conditional_key
+            if let Some(serde_json::Value::String(key)) = v.pointer("/config/conditional_key") {
+                conditionals.insert(key.to_string());
+            }
+
+            //check for content conditional settings
+            if let Some(serde_json::Value::Object(obj)) = v.pointer("/conditional") 
+                && let Some(k) = obj.get("key") && let Some(key) = k.as_str()
+                    && !conditionals.contains(key) {
+                result.all_ok = false;
+                result.error_list.push(format!("Conditional key {} for content not found (document {})", key, document_num + 1))
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, document: usize, template: &Path) -> Result<(), error::STCError> {
@@ -101,13 +127,10 @@ fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, d
             if let serde_json::Value::Object(o) = c
                 && let Some(serde_json::Value::String(s)) = o.get("type")
                 && s == "information"
-            {
-                if let Some(serde_json::Value::String(file)) = o.get("image")
-                    && !fs::exists(template.parent().unwrap().join(file))?
-                {
+                && let Some(serde_json::Value::String(file)) = o.get("image")
+                && !fs::exists(template.parent().unwrap().join(file))? {
                     result.all_ok = false;
                     result.error_list.push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
-                }
             }
         }
     }
@@ -146,8 +169,9 @@ mod tests {
             "productName": "A green door"
         });
 
-        let result = &mut result::CheckResult::all_ok();
-        check_document(&instance, &get_validator(), result, 0, Path::new("/test/file.yml")).unwrap();
+        let mut result = result::CheckResult::all_ok();
+        let mut conditionals = HashSet::new();
+        check_document(&instance, &get_validator(), &mut result, 0, Path::new("/test/file.yml"), &mut conditionals).unwrap();
 
         assert!(!result.all_ok);
         assert_eq!(result.error_list.len(), 1);
@@ -160,8 +184,9 @@ mod tests {
             "productName": true
         });
 
-        let result = &mut result::CheckResult::all_ok();
-        check_document(&instance, &get_validator(), result, 0, Path::new("/test/file.yml")).unwrap();
+        let mut result = result::CheckResult::all_ok();
+        let mut conditionals = HashSet::new();
+        check_document(&instance, &get_validator(), &mut result, 0, Path::new("/test/file.yml"), &mut conditionals).unwrap();
 
         assert!(!result.all_ok);
         assert_eq!(result.error_list.len(), 2);
@@ -174,8 +199,9 @@ mod tests {
             "productName": "A green door"
         });
 
-        let result = &mut result::CheckResult::all_ok();
-        check_document(&instance, &get_validator(), result, 0, Path::new("/test/file.yml")).unwrap();
+        let mut result = result::CheckResult::all_ok();
+        let mut conditionals = HashSet::new();
+        check_document(&instance, &get_validator(), &mut result, 0, Path::new("/test/file.yml"), &mut conditionals).unwrap();
 
         assert!(result.all_ok);
         assert_eq!(result.error_list.len(), 0);
