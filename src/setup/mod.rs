@@ -22,7 +22,7 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
         _ => {
             result.all_ok = false;
             result.error_list.push(format!("Only Windows and Linux supported as operating system. Found '{}'", env::consts::OS));
-        }
+        },
     }
 
     //check java installation
@@ -38,7 +38,7 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
             } else {
                 None
             }
-        }
+        },
     };
 
     if output.is_none() {
@@ -60,11 +60,11 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
                 } else {
                     result.success_list.push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
                 }
-            }
+            },
             None => {
                 result.all_ok = false;
                 result.error_list.push("Could not detect any Java version".to_string());
-            }
+            },
         }
     } else {
         result.all_ok = false;

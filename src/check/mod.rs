@@ -56,7 +56,14 @@ pub fn check(file: &Path) -> Result<result::CheckResult, error::STCError> {
     Ok(result)
 }
 
-fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validator, result: &mut result::CheckResult, document_num: usize, file: &Path, conditionals: &mut HashSet<String>) -> Result<(), error::STCError> {
+fn check_document(
+    instance: &serde_json::Value,
+    validator: &jsonschema::Validator,
+    result: &mut result::CheckResult,
+    document_num: usize,
+    file: &Path,
+    conditionals: &mut HashSet<String>,
+) -> Result<(), error::STCError> {
     let evaluation = validator.evaluate(instance);
 
     if evaluation.flag().valid {
@@ -74,16 +81,23 @@ fn check_document(instance: &serde_json::Value, validator: &jsonschema::Validato
     }
 }
 
-fn check_conditionals(instance: &serde_json::Value, result: &mut crate::CheckResult, document_num: usize, conditionals: &mut HashSet<String>) -> Result<(), error::STCError> {
+fn check_conditionals(
+    instance: &serde_json::Value,
+    result: &mut crate::CheckResult,
+    document_num: usize,
+    conditionals: &mut HashSet<String>,
+) -> Result<(), error::STCError> {
     //check for page conditional settings
     if let Some(serde_json::Value::Object(obj)) = instance.pointer("/conditional")
-        && let Some(k) = obj.get("key") && let Some(key) = k.as_str()
-        && !conditionals.contains(key) {
+        && let Some(k) = obj.get("key")
+        && let Some(key) = k.as_str()
+        && !conditionals.contains(key)
+    {
         result.all_ok = false;
         result.error_list.push(format!("Conditional key {} for page not found (document {})", key, document_num + 1))
     }
 
-    //check for conditional keys & content conditional settings 
+    //check for conditional keys & content conditional settings
     if let Some(serde_json::Value::Array(content)) = instance.pointer("/content") {
         for v in content.iter() {
             //add conditional_key
@@ -92,9 +106,11 @@ fn check_conditionals(instance: &serde_json::Value, result: &mut crate::CheckRes
             }
 
             //check for content conditional settings
-            if let Some(serde_json::Value::Object(obj)) = v.pointer("/conditional") 
-                && let Some(k) = obj.get("key") && let Some(key) = k.as_str()
-                    && !conditionals.contains(key) {
+            if let Some(serde_json::Value::Object(obj)) = v.pointer("/conditional")
+                && let Some(k) = obj.get("key")
+                && let Some(key) = k.as_str()
+                && !conditionals.contains(key)
+            {
                 result.all_ok = false;
                 result.error_list.push(format!("Conditional key {} for content not found (document {})", key, document_num + 1))
             }
@@ -128,9 +144,10 @@ fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, d
                 && let Some(serde_json::Value::String(s)) = o.get("type")
                 && s == "information"
                 && let Some(serde_json::Value::String(file)) = o.get("image")
-                && !fs::exists(template.parent().unwrap().join(file))? {
-                    result.all_ok = false;
-                    result.error_list.push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
+                && !fs::exists(template.parent().unwrap().join(file))?
+            {
+                result.all_ok = false;
+                result.error_list.push(format!("File '{file}', referenced at page {} - element {}, not found", document + 1, i + 1));
             }
         }
     }

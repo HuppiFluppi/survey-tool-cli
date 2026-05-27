@@ -321,7 +321,7 @@ impl SurveyPageContent {
                     parts.push(format!("image: {}", image.as_deref().unwrap()));
                 }
                 parts.join("\n")
-            }
+            },
         }
     }
 
