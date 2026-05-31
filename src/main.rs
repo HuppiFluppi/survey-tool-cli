@@ -19,6 +19,7 @@ use clap::{Parser, Subcommand};
 use survey_tool_cli::*;
 
 mod main_helper;
+use main_helper as mh;
 
 // Cli model with clap configuration
 #[derive(Parser)]
@@ -135,15 +136,138 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
     match subcommand {
         ConfigSubcommand::List { path, show_elements, no_header } => list_cmd(file, path.as_ref(), *show_elements, *no_header),
         ConfigSubcommand::Init { overwrite } => init_cmd(file, *overwrite),
-        ConfigSubcommand::SurveyDetails => todo!(),
+        ConfigSubcommand::SurveyDetails => edit_survey_details(file),
         // ConfigSubcommand::AddPage { num } => todo!(),
         // ConfigSubcommand::EditPage { page } => todo!(),
         ConfigSubcommand::RemovePage => remove_cmd(file),
     }
 }
 
+fn edit_survey_details(file: &str) {
+    //get config
+    let mut config = match load_config(file) {
+        Ok(c) => c,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        },
+    };
+
+    //select fields to edit
+    let options = vec![
+        mh::SurveyDetailFields::Title,
+        mh::SurveyDetailFields::Description,
+        mh::SurveyDetailFields::Type,
+        mh::SurveyDetailFields::Image,
+        mh::SurveyDetailFields::BackgroundImage,
+        mh::SurveyDetailFields::Score,
+    ];
+    let fields = match inquire::MultiSelect::new("Which fields should be changed?", options).prompt() {
+        Ok(f) => f,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        },
+    };
+
+    //edit title
+    if fields.contains(&mh::SurveyDetailFields::Title) {
+        config.title = match inquire::Text::new("Input new title:").with_initial_value(&config.title).prompt() {
+            Ok(s) => s,
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            },
+        };
+    }
+
+    //edit desc
+    if fields.contains(&mh::SurveyDetailFields::Description) {
+        config.description = match inquire::Text::new("Input new description:").with_initial_value(&config.description).prompt() {
+            Ok(s) => s,
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            },
+        };
+    }
+
+    //edit type
+    if fields.contains(&mh::SurveyDetailFields::Type) {
+        config.survey_type = match inquire::Select::new("Select new type:", vec![SurveyType::Survey, SurveyType::Quiz]).prompt() {
+            Ok(v) => v,
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            },
+        };
+    }
+
+    //edit image
+    if fields.contains(&mh::SurveyDetailFields::Image) {
+        let mut prompt = inquire::Text::new("Input new image path:");
+
+        prompt = match &config.image {
+            Some(v) => prompt.with_initial_value(v),
+            None => prompt,
+        };
+
+        config.image = match prompt.with_help_message("Unset with empty").prompt() {
+            Ok(s) if s.is_empty() => None,
+            Ok(s) => Some(s),
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            },
+        };
+    }
+
+    //edit background image
+    if fields.contains(&mh::SurveyDetailFields::BackgroundImage) {
+        let mut prompt = inquire::Text::new("Input new background image path:");
+
+        prompt = match &config.background_image {
+            Some(v) => prompt.with_initial_value(v),
+            None => prompt,
+        };
+
+        config.background_image = match prompt.with_help_message("Unset with empty").prompt() {
+            Ok(s) if s.is_empty() => None,
+            Ok(s) => Some(s),
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            },
+        };
+    }
+
+    //edit score settings
+    if fields.contains(&mh::SurveyDetailFields::Score) {
+        config.score = match inquire::Confirm::new("Remove score settings?").with_default(config.survey_type == SurveyType::Survey).prompt() {
+            Err(e) => {
+                println!(" {} {}", "Error: ".red(), e);
+                return;
+            },
+            Ok(false) => match mh::query_score_settings() {
+                Ok(s) => Some(s),
+                Err(e) => {
+                    println!(" {} {}", "Error: ".red(), e);
+                    return;
+                },
+            },
+            Ok(true) => None,
+        };
+    }
+
+    //save
+    match save_config(file, true, &config) {
+        Ok(_) => println!(" 👍 successfully altered {} details", config.survey_type),
+        Err(e) => println!(" ❌ {} {}", "Error:".red(), e),
+    }
+}
+
 fn remove_cmd(file: &str) {
-    //get file
+    //get config
     let mut config = match load_config(file) {
         Ok(c) => c,
         Err(e) => {
@@ -159,7 +283,7 @@ fn remove_cmd(file: &str) {
     }
 
     //select page
-    let options = config.pages.iter().enumerate().map(|(i, page)| main_helper::PageOption { title: page.title.to_owned(), index: i }).collect();
+    let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageOption { title: page.title.to_owned(), index: i }).collect();
     let page = match inquire::Select::new("Select page to delete", options).prompt() {
         Ok(p) => p,
         Err(e) => {
@@ -242,81 +366,23 @@ fn init_cmd(file: &str, overwrite: bool) {
     };
 
     //get score info on quizes
-    let score: Option<ScoreSettings>;
-    if matches!(survey_type, SurveyType::Quiz) {
-        match inquire::Confirm::new("Do you want to use the default score settings?").with_default(true).prompt() {
-            Ok(true) => score = Some(ScoreSettings::default()),
-            Ok(false) => {
-                let show_question_scores = match inquire::Confirm::new("Show scores on each question?").with_default(false).prompt() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        println!(" {} {}", "Error: ".red(), e);
-                        return;
-                    },
-                };
-                let show_leaderboard = match inquire::Confirm::new("Show leaderboard/highscore?").with_default(true).prompt() {
-                    Ok(v) => v,
-                    Err(e) => {
-                        println!(" {} {}", "Error: ".red(), e);
-                        return;
-                    },
-                };
-
-                let leaderboard = if show_leaderboard {
-                    let show_scores = match inquire::Confirm::new("Show player scores on leaderboard?").with_default(true).prompt() {
-                        Ok(v) => v,
-                        Err(e) => {
-                            println!(" {} {}", "Error: ".red(), e);
-                            return;
-                        },
-                    };
-                    let show_placeholder = match inquire::Confirm::new("Show placeholder instead of empty rows?").with_default(true).prompt() {
-                        Ok(v) => v,
-                        Err(e) => {
-                            println!(" {} {}", "Error: ".red(), e);
-                            return;
-                        },
-                    };
-                    let limit: u8 = match inquire::CustomType::new("Number of participants shown on leaderboard?")
-                        .with_error_message("Please type a valid number")
-                        .prompt()
-                    {
-                        Ok(v) => v,
-                        Err(e) => {
-                            println!(" {} {}", "Error: ".red(), e);
-                            return;
-                        },
-                    };
-                    let background_image = match inquire::Text::new("Enter optional leaderboard background image path (skip with ESC):").prompt_skippable() {
-                        Ok(v) => v.filter(|t| !t.trim().is_empty()),
-                        Err(e) => {
-                            println!(" {} {}", "Error: ".red(), e);
-                            return;
-                        },
-                    };
-
-                    LeaderboardSettings::new(show_scores, show_placeholder, limit.into(), background_image)
-                } else {
-                    LeaderboardSettings::default()
-                };
-
-                score = Some(ScoreSettings::new(show_question_scores, show_leaderboard, leaderboard))
-            },
+    let score: Option<ScoreSettings> = match survey_type {
+        SurveyType::Quiz => match mh::query_score_settings() {
+            Ok(s) => Some(s),
             Err(e) => {
                 println!(" {} {}", "Error: ".red(), e);
                 return;
             },
-        }
-    } else {
-        score = None;
-    }
+        },
+        _ => None,
+    };
 
     //input first page
     println!();
     println!("  {}", "Enter first page information".bold());
     println!();
 
-    let page = match main_helper::input_survey_page() {
+    let page = match mh::input_survey_page() {
         Ok(v) => v,
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
@@ -345,7 +411,7 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
     };
 
     //build table of contents
-    let toc = main_helper::build_toc(&config);
+    let toc = mh::build_toc(&config);
 
     //output based on cmd arguments
     if let Some(path) = path {

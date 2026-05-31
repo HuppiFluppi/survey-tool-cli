@@ -26,21 +26,21 @@ pub fn setup_check() -> Result<CheckResult, STCError> {
 }
 
 /// Validate an existing survey tool configuration file(yaml).
-/// 
+///
 /// *file*: path to the configuration file
 pub fn config_check(file: &str) -> Result<CheckResult, STCError> {
     check::check(Path::new(file))
 }
 
 /// Load an existing survey tool configuration file(yaml) and return its representation ([SurveyConfig]).
-/// 
+///
 /// *file*: path to the configuration file
 pub fn load_config(file: &str) -> Result<SurveyConfig, STCError> {
     config::load(Path::new(file))
 }
 
 /// Save survey tool configuration model([SurveyConfig]).
-/// 
+///
 /// *file*: path to the configuration file
 /// *overwrite*: whether to overwrite. will fail if file exists otherwise
 /// *config*: the config to save

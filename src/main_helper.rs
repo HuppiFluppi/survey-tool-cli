@@ -125,3 +125,47 @@ impl std::fmt::Display for PageOption {
         }
     }
 }
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SurveyDetailFields {
+    Title,
+    Description,
+    Type,
+    Image,
+    BackgroundImage,
+    Score,
+}
+
+impl std::fmt::Display for SurveyDetailFields {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+pub fn query_score_settings() -> Result<ScoreSettings, inquire::InquireError> {
+    match inquire::Confirm::new("Do you want to use the default score settings?").with_default(true).prompt()? {
+        true => Ok(ScoreSettings::default()),
+        false => {
+            let show_question_scores = inquire::Confirm::new("Show scores on each question?").with_default(false).prompt()?;
+            let show_leaderboard = inquire::Confirm::new("Show leaderboard/highscore?").with_default(true).prompt()?;
+
+            let leaderboard = if show_leaderboard {
+                let show_scores = inquire::Confirm::new("Show player scores on leaderboard?").with_default(true).prompt()?;
+                let show_placeholder = inquire::Confirm::new("Show placeholder instead of empty rows?").with_default(true).prompt()?;
+                let limit: u8 = inquire::CustomType::new("Number of participants shown on leaderboard?")
+                    .with_default(10)
+                    .with_error_message("Please type a valid number")
+                    .prompt()?;
+                let background_image = inquire::Text::new("Enter optional leaderboard background image path (skip with ESC):")
+                    .prompt_skippable()?
+                    .filter(|t| !t.trim().is_empty());
+
+                LeaderboardSettings::new(show_scores, show_placeholder, limit.into(), background_image)
+            } else {
+                LeaderboardSettings::default()
+            };
+
+            Ok(ScoreSettings::new(show_question_scores, show_leaderboard, leaderboard))
+        },
+    }
+}
