@@ -21,7 +21,8 @@ This CLI tool is a companion utility for the [Survey Tool](https://github.com/Hu
 
 - **Validating survey configuration files** - Check YAML survey configurations for syntax and schema correctness
 - **System prerequisite checks** - Verify that your system can run the Survey Tool application
-- **[In Future] Configuration management** - Support for editing survey configurations from the command line
+- **Configuration management** - Support for editing survey configurations from the command line
+- **[In Future] Survey tool server interaction** - Upload surveys to the server
 
 The tool helps ensure your survey configurations are valid before loading them into the main Survey Tool application.
 
@@ -60,18 +61,51 @@ Go to the [github release page](https://github.com/HuppiFluppi/survey-tool-cli/r
 ### Check Survey Configuration
 Validate a survey configuration file:
 ```bash
-survey-tool-cli check path/to/survey.yaml
+$ survey-tool-cli check path/to/survey.yaml
 ```
 
 With verbose output:
 ```bash
-survey-tool-cli check path/to/survey.yaml --verbose
+$ survey-tool-cli check path/to/survey.yaml --verbose
 ```
 
 ### System Prerequisites Check
 Verify your system can run Survey Tool:
 ```bash
-survey-tool-cli setup-check
+$ survey-tool-cli setup-check
+```
+
+### List survey configuration elements
+Verify your system can run Survey Tool:
+```
+$ survey-tool-cli config template.yml init
+
+📝 Enter survey information
+
+> Which type do you want? survey
+> Enter survey title: My survey
+> Enter survey description: A good description
+? Enter optional image path (skip with ESC): <canceled>
+? Enter optional background image path (skip with ESC): <canceled>
+
+  Enter first page information
+
+? Enter page title (skip with ESC): <canceled>
+? Enter page description (skip with ESC): <canceled>
+? Enter optional image path (skip with ESC): <canceled>
+> Make conditional? No
+ 👍 successfully init file. You can now add content(questions) and more pages
+
+$ survey-tool-cli config template.yml ls
+
+📘 Survey title: My survey
+   Survey desc:  A good description
+   Survey type:  survey                                          Conditionals: false
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  Pages(1):
+   1. <not set>
+
 ```
 
 ### Help
@@ -82,16 +116,18 @@ survey-tool-cli --help
 
 ## Roadmap
 - [x] Add Github build pipeline for release
-- [ ] Add edit/create of configuration files
+- [-] Add edit/create of configuration files
+- [ ] Add interaction with survey-tool-server(s)
 - [ ] Refactor project with new insights and learnings in Rust
 
 ## Tech Stack
 
 - **Language**: Rust (Edition 2024)
-- **CLI Framework**: clap 4.5
-- **JSON Schema Validation**: jsonschema 0.38
-- **YAML Parsing**: serde-saphyr 0.0.12 (with serde-json 1.0)
-- **Output Formatting**: colored 3.0
+- **CLI Framework**: clap 4.6
+- **Interactive Prompts**: inquire 0.9
+- **JSON Schema Validation**: jsonschema 0.46
+- **YAML Parsing**: serde-saphyr 0.0.27 (with serde-json 1.0)
+- **Output Formatting**: colored 3.1
 - **Regex parsing**: regex 1.12
 
 ## Disclaimer

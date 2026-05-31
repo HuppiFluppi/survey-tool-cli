@@ -5,7 +5,7 @@
 //! Current commands:
 //! - **check**: Check an existing survey tool configuration yaml for correctness
 //! - **setup-check**: Check local host for prerequisites to run survey tool
-//! - *edit (not yet): Allow to edit(add/remove/change) a survey tool config from command line*
+//! - **config**: Allow to handle survey tool config from command line*
 //!
 //! This binary crate uses the lib crate in the same repository.
 //!
@@ -40,7 +40,7 @@ enum Commands {
         file: String,
     },
 
-    #[command(about = "Edit a survey tool configuration file")]
+    #[command(about = "Interactively edit a survey tool configuration file")]
     Config {
         /// The file to edit
         file: String,
@@ -77,30 +77,21 @@ enum ConfigSubcommand {
         #[arg(long)]
         overwrite: bool,
     },
-    // /// Edit the survey details
-    // #[command(visible_alias = "sd")]
-    // SurveyDetails,
+
+    /// Edit the survey details
+    #[command(visible_alias = "sd")]
+    SurveyDetails,
 
     // /// Add a new survey page
     // #[command(visible_alias = "np")]
-    // AddPage {
-    //     /// Add page at <num> position
-    //     num: Option<u16>,
-    // },
+    // AddPage,
 
     // /// Edit an existing survey page
     // #[command(visible_alias = "ep")]
-    // EditPage {
-    //     /// Page identified by number or title
-    //     page: Option<String>,
-    // },
-
-    // /// Remove a survey page
-    // #[command(visible_alias = "rm")]
-    // RemovePage {
-    //     /// Page identified by number or title
-    //     page: Option<String>,
-    // },
+    // EditPage,
+    /// Remove a survey page
+    #[command(visible_alias = "rm")]
+    RemovePage,
 }
 
 // Functions
@@ -119,7 +110,7 @@ fn display_check_result(result: Result<CheckResult, STCError>, verbose: bool) {
         Err(err) => {
             println!(" ❌ {} {}", "Error:".red(), err);
             exit(1)
-        }
+        },
         Ok(result) => {
             if result.all_ok {
                 println!("{}", "### All OK ###".green().bold());
@@ -136,7 +127,7 @@ fn display_check_result(result: Result<CheckResult, STCError>, verbose: bool) {
                 }
                 result.error_list.iter().for_each(|x| println!(" ❌ {x}"));
             }
-        }
+        },
     }
 }
 
@@ -144,10 +135,59 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
     match subcommand {
         ConfigSubcommand::List { path, show_elements, no_header } => list_cmd(file, path.as_ref(), *show_elements, *no_header),
         ConfigSubcommand::Init { overwrite } => init_cmd(file, *overwrite),
-        // ConfigSubcommand::SurveyDetails => todo!(),
+        ConfigSubcommand::SurveyDetails => todo!(),
         // ConfigSubcommand::AddPage { num } => todo!(),
         // ConfigSubcommand::EditPage { page } => todo!(),
-        // ConfigSubcommand::RemovePage { page } => todo!(),
+        ConfigSubcommand::RemovePage => remove_cmd(file),
+    }
+}
+
+fn remove_cmd(file: &str) {
+    //get file
+    let mut config = match load_config(file) {
+        Ok(c) => c,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        },
+    };
+
+    //check page count
+    if config.pages.len() < 2 {
+        println!(" {} Can't remove page from single page survey", "Error: ".red());
+        return;
+    }
+
+    //select page
+    let options = config.pages.iter().enumerate().map(|(i, page)| main_helper::PageOption { title: page.title.to_owned(), index: i }).collect();
+    let page = match inquire::Select::new("Select page to delete", options).prompt() {
+        Ok(p) => p,
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        },
+    };
+
+    //confirm remove
+    match inquire::Confirm::new(&format!("Confirm removal of page {}", page.index + 1)).with_default(false).prompt() {
+        Err(e) => {
+            println!(" {} {}", "Error: ".red(), e);
+            return;
+        },
+        Ok(false) => {
+            println!(" {}", "Cancelled".red());
+            return;
+        },
+        Ok(_) => (),
+    };
+
+    //remove page
+    config.remove_page(page.index);
+
+    //save
+    match save_config(file, true, &config) {
+        Ok(_) => println!(" 👍 successfully removed page"),
+        Err(e) => println!(" ❌ {} {}", "Error:".red(), e),
     }
 }
 
@@ -162,7 +202,7 @@ fn init_cmd(file: &str, overwrite: bool) {
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
             return;
-        }
+        },
     };
 
     //input survey/quiz title
@@ -171,7 +211,7 @@ fn init_cmd(file: &str, overwrite: bool) {
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
             return;
-        }
+        },
     };
 
     //input survey/quiz description
@@ -180,7 +220,7 @@ fn init_cmd(file: &str, overwrite: bool) {
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
             return;
-        }
+        },
     };
 
     //input optional image
@@ -189,7 +229,7 @@ fn init_cmd(file: &str, overwrite: bool) {
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
             return;
-        }
+        },
     };
 
     //input optional background image
@@ -198,7 +238,7 @@ fn init_cmd(file: &str, overwrite: bool) {
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
             return;
-        }
+        },
     };
 
     //get score info on quizes
@@ -212,14 +252,14 @@ fn init_cmd(file: &str, overwrite: bool) {
                     Err(e) => {
                         println!(" {} {}", "Error: ".red(), e);
                         return;
-                    }
+                    },
                 };
                 let show_leaderboard = match inquire::Confirm::new("Show leaderboard/highscore?").with_default(true).prompt() {
                     Ok(v) => v,
                     Err(e) => {
                         println!(" {} {}", "Error: ".red(), e);
                         return;
-                    }
+                    },
                 };
 
                 let leaderboard = if show_leaderboard {
@@ -228,14 +268,14 @@ fn init_cmd(file: &str, overwrite: bool) {
                         Err(e) => {
                             println!(" {} {}", "Error: ".red(), e);
                             return;
-                        }
+                        },
                     };
                     let show_placeholder = match inquire::Confirm::new("Show placeholder instead of empty rows?").with_default(true).prompt() {
                         Ok(v) => v,
                         Err(e) => {
                             println!(" {} {}", "Error: ".red(), e);
                             return;
-                        }
+                        },
                     };
                     let limit: u8 = match inquire::CustomType::new("Number of participants shown on leaderboard?")
                         .with_error_message("Please type a valid number")
@@ -245,14 +285,14 @@ fn init_cmd(file: &str, overwrite: bool) {
                         Err(e) => {
                             println!(" {} {}", "Error: ".red(), e);
                             return;
-                        }
+                        },
                     };
                     let background_image = match inquire::Text::new("Enter optional leaderboard background image path (skip with ESC):").prompt_skippable() {
                         Ok(v) => v.filter(|t| !t.trim().is_empty()),
                         Err(e) => {
                             println!(" {} {}", "Error: ".red(), e);
                             return;
-                        }
+                        },
                     };
 
                     LeaderboardSettings::new(show_scores, show_placeholder, limit.into(), background_image)
@@ -261,11 +301,11 @@ fn init_cmd(file: &str, overwrite: bool) {
                 };
 
                 score = Some(ScoreSettings::new(show_question_scores, show_leaderboard, leaderboard))
-            }
+            },
             Err(e) => {
                 println!(" {} {}", "Error: ".red(), e);
                 return;
-            }
+            },
         }
     } else {
         score = None;
@@ -281,7 +321,7 @@ fn init_cmd(file: &str, overwrite: bool) {
         Err(e) => {
             println!(" {} {}", "Error: ".red(), e);
             return;
-        }
+        },
     };
 
     //create and write config
@@ -301,7 +341,7 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
         Err(e) => {
             println!(" ❌ {} {}", "Error:".red(), e);
             return;
-        }
+        },
     };
 
     //build table of contents

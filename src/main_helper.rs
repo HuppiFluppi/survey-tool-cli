@@ -1,3 +1,6 @@
+//! # Survey Tool CLI application helper
+//! Functions and models supporting the main.rs function workloads
+
 use colored::Colorize;
 use inquire::required;
 use survey_tool_cli::*;
@@ -107,4 +110,18 @@ pub fn input_conditional_setting() -> Result<Option<ConditionalSettings>, inquir
     cond.values = values;
 
     Ok(Some(cond))
+}
+
+pub struct PageOption {
+    pub title: Option<String>,
+    pub index: usize,
+}
+
+impl std::fmt::Display for PageOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.title {
+            Some(s) => write!(f, "{:2}. {}", self.index + 1, s),
+            None => write!(f, "{:2}. <not set>", self.index + 1),
+        }
+    }
 }
