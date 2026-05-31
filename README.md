@@ -76,7 +76,7 @@ $ survey-tool-cli setup-check
 ```
 
 ### List survey configuration elements
-Verify your system can run Survey Tool:
+Initialize a survey and then query its contents:
 ```
 $ survey-tool-cli config template.yml init
 
@@ -116,7 +116,7 @@ survey-tool-cli --help
 
 ## Roadmap
 - [x] Add Github build pipeline for release
-- [-] Add edit/create of configuration files
+- [ ] Add edit/create of configuration files
 - [ ] Add interaction with survey-tool-server(s)
 - [ ] Refactor project with new insights and learnings in Rust
 
