@@ -283,7 +283,7 @@ fn remove_cmd(file: &str) {
     }
 
     //select page
-    let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageOption { title: page.title.to_owned(), index: i }).collect();
+    let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
     let page = match inquire::Select::new("Select page to delete", options).prompt() {
         Ok(p) => p,
         Err(e) => {

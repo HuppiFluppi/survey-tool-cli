@@ -112,12 +112,12 @@ pub fn input_conditional_setting() -> Result<Option<ConditionalSettings>, inquir
     Ok(Some(cond))
 }
 
-pub struct PageOption {
+pub struct PageSelectOption {
     pub title: Option<String>,
     pub index: usize,
 }
 
-impl std::fmt::Display for PageOption {
+impl std::fmt::Display for PageSelectOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.title {
             Some(s) => write!(f, "{:2}. {}", self.index + 1, s),
