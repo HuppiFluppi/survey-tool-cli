@@ -72,6 +72,8 @@ impl SurveyConfig {
         self.pages.push(page);
     }
 
+    /// #Panics
+    /// Panics if index is out of bounds.
     pub fn remove_page(&mut self, index: usize) {
         self.pages.remove(index);
     }

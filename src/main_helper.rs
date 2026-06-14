@@ -36,7 +36,7 @@ pub fn build_toc(config: &SurveyConfig) -> ConfigTOC {
         survey_type: config.survey_type,
         survey_desc: truncate(config.description.as_str()),
         has_conditionals: has_conditionals(config),
-        pages: Vec::from_iter(config.pages.iter().map(|p| ConfigTOCPage {
+        pages: config.pages.iter().map(|p| ConfigTOCPage {
             page_title: p.title.as_deref().unwrap_or("<not set>").to_string(),
             page_desc: truncate(p.description.as_deref().unwrap_or("<not set>")),
             conditional: collect_conditional_setting(&p.conditional),
@@ -50,7 +50,7 @@ pub fn build_toc(config: &SurveyConfig) -> ConfigTOC {
                     config: c.format_config(),
                 }
             })),
-        })),
+        }).collect(),
     }
 }
 
@@ -60,7 +60,7 @@ pub fn collect_conditional_setting(conditional: &Option<ConditionalSettings>) ->
 
 const MAX_DESC_LENGTH: usize = 80;
 pub fn truncate(text: &str) -> String {
-    if text.len() > MAX_DESC_LENGTH { format!("{}...", text.chars().take(MAX_DESC_LENGTH - 3).collect::<String>()) } else { text.to_string() }
+    if text.chars().count() > MAX_DESC_LENGTH { format!("{}...", text.chars().take(MAX_DESC_LENGTH - 3).collect::<String>()) } else { text.to_string() }
 }
 
 pub fn has_conditionals(config: &SurveyConfig) -> bool {

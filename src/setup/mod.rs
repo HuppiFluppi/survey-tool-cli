@@ -68,7 +68,7 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
         }
     } else {
         result.all_ok = false;
-        result.error_list.push("Java not found. Cant check it's version".to_string());
+        result.error_list.push("Java not found. Can't check it's version".to_string());
     }
 
     Ok(result)

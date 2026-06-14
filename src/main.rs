@@ -13,7 +13,6 @@
 
 use colored::Colorize;
 use inquire::required;
-use std::process::exit;
 
 use clap::{Parser, Subcommand};
 use survey_tool_cli::*;
@@ -110,7 +109,7 @@ fn display_check_result(result: Result<CheckResult, STCError>, verbose: bool) {
     match result {
         Err(err) => {
             println!(" ❌ {} {}", "Error:".red(), err);
-            exit(1)
+            return
         },
         Ok(result) => {
             if result.all_ok {

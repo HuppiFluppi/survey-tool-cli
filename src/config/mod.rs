@@ -20,8 +20,8 @@ pub fn load(file: &path::Path) -> Result<SurveyConfig, STCError> {
 
     //load file
     let file_content = fs::read_to_string(file)?;
-    let document_devider = RegexBuilder::new(r"^---").multi_line(true).build().unwrap();
-    let documents: Vec<&str> = document_devider.split(&file_content).filter(|s| !s.is_empty()).collect();
+    let document_divider = RegexBuilder::new(r"^---").multi_line(true).build().unwrap();
+    let documents: Vec<&str> = document_divider.split(&file_content).filter(|s| !s.is_empty()).collect();
     if documents.len() < 2 {
         return Err(STCError::YAMLFormat(format!(
             "File '{}' is missing the right number of YAML documents. Minimum: 2, found: {}",
