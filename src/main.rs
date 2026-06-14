@@ -144,13 +144,7 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
 
 fn edit_survey_details(file: &str) {
     //get config
-    let mut config = match load_config(file) {
-        Ok(c) => c,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let mut config = match_error!(load_config(file));
 
     //select fields to edit
     let options = vec![
@@ -161,45 +155,21 @@ fn edit_survey_details(file: &str) {
         mh::SurveyDetailFields::BackgroundImage,
         mh::SurveyDetailFields::Score,
     ];
-    let fields = match inquire::MultiSelect::new("Which fields should be changed?", options).prompt() {
-        Ok(f) => f,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let fields = match_error!(inquire::MultiSelect::new("Which fields should be changed?", options).prompt());
 
     //edit title
     if fields.contains(&mh::SurveyDetailFields::Title) {
-        config.title = match inquire::Text::new("Input new title:").with_initial_value(&config.title).prompt() {
-            Ok(s) => s,
-            Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
-                return;
-            },
-        };
+        config.title = match_error!(inquire::Text::new("Input new title:").with_initial_value(&config.title).prompt());
     }
 
     //edit desc
     if fields.contains(&mh::SurveyDetailFields::Description) {
-        config.description = match inquire::Text::new("Input new description:").with_initial_value(&config.description).prompt() {
-            Ok(s) => s,
-            Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
-                return;
-            },
-        };
+        config.description = match_error!(inquire::Text::new("Input new description:").with_initial_value(&config.description).prompt());
     }
 
     //edit type
     if fields.contains(&mh::SurveyDetailFields::Type) {
-        config.survey_type = match inquire::Select::new("Select new type:", vec![SurveyType::Survey, SurveyType::Quiz]).prompt() {
-            Ok(v) => v,
-            Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
-                return;
-            },
-        };
+        config.survey_type = match_error!(inquire::Select::new("Select new type:", vec![SurveyType::Survey, SurveyType::Quiz]).prompt());
     }
 
     //edit image
@@ -215,7 +185,7 @@ fn edit_survey_details(file: &str) {
             Ok(s) if s.is_empty() => None,
             Ok(s) => Some(s),
             Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error: ".red(), e);
                 return;
             },
         };
@@ -234,7 +204,7 @@ fn edit_survey_details(file: &str) {
             Ok(s) if s.is_empty() => None,
             Ok(s) => Some(s),
             Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error: ".red(), e);
                 return;
             },
         };
@@ -244,13 +214,13 @@ fn edit_survey_details(file: &str) {
     if fields.contains(&mh::SurveyDetailFields::Score) {
         config.score = match inquire::Confirm::new("Remove score settings?").with_default(config.survey_type == SurveyType::Survey).prompt() {
             Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error: ".red(), e);
                 return;
             },
             Ok(false) => match mh::query_score_settings() {
                 Ok(s) => Some(s),
                 Err(e) => {
-                    println!(" {} {}", "Error: ".red(), e);
+                    println!(" ❌ {} {}", "Error: ".red(), e);
                     return;
                 },
             },
@@ -267,34 +237,22 @@ fn edit_survey_details(file: &str) {
 
 fn remove_cmd(file: &str) {
     //get config
-    let mut config = match load_config(file) {
-        Ok(c) => c,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let mut config = match_error!(load_config(file));
 
     //check page count
     if config.pages.len() < 2 {
-        println!(" {} Can't remove page from single page survey", "Error: ".red());
+        println!(" ❌ {} Can't remove page from single page survey", "Error: ".red());
         return;
     }
 
     //select page
     let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
-    let page = match inquire::Select::new("Select page to delete", options).prompt() {
-        Ok(p) => p,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let page = match_error!(inquire::Select::new("Select page to delete", options).prompt());
 
     //confirm remove
     match inquire::Confirm::new(&format!("Confirm removal of page {}", page.index + 1)).with_default(false).prompt() {
         Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
+            println!(" ❌ {} {}", "Error: ".red(), e);
             return;
         },
         Ok(false) => {
@@ -320,59 +278,23 @@ fn init_cmd(file: &str, overwrite: bool) {
     println!();
 
     //select survey type
-    let survey_type = match inquire::Select::new("Which type do you want?", vec![SurveyType::Survey, SurveyType::Quiz]).prompt() {
-        Ok(v) => v,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let survey_type = match_error!(inquire::Select::new("Which type do you want?", vec![SurveyType::Survey, SurveyType::Quiz]).prompt());
 
     //input survey/quiz title
-    let title = match inquire::Text::new(&format!("Enter {survey_type} title:")).with_validator(required!("Title is required")).prompt() {
-        Ok(v) => v,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let title = match_error!(inquire::Text::new(&format!("Enter {survey_type} title:")).with_validator(required!("Title is required")).prompt());
 
     //input survey/quiz description
-    let desc = match inquire::Text::new(&format!("Enter {survey_type} description:")).with_validator(required!("Description is required")).prompt() {
-        Ok(v) => v,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let desc = match_error!(inquire::Text::new(&format!("Enter {survey_type} description:")).with_validator(required!("Description is required")).prompt());
 
     //input optional image
-    let image = match inquire::Text::new("Enter optional image path (skip with ESC):").prompt_skippable() {
-        Ok(str) => str.filter(|t| !t.trim().is_empty()),
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let image = match_error!(inquire::Text::new("Enter optional image path (skip with ESC):").prompt_skippable(), ok, ok.filter(|t| !t.trim().is_empty()));
 
     //input optional background image
-    let background_image = match inquire::Text::new("Enter optional background image path (skip with ESC):").prompt_skippable() {
-        Ok(str) => str.filter(|t| !t.trim().is_empty()),
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let background_image = match_error!(inquire::Text::new("Enter optional background image path (skip with ESC):").prompt_skippable(), ok, ok.filter(|t| !t.trim().is_empty()));
 
     //get score info on quizes
     let score: Option<ScoreSettings> = match survey_type {
-        SurveyType::Quiz => match mh::query_score_settings() {
-            Ok(s) => Some(s),
-            Err(e) => {
-                println!(" {} {}", "Error: ".red(), e);
-                return;
-            },
-        },
+        SurveyType::Quiz => match_error!(mh::query_score_settings(), s, Some(s)),
         _ => None,
     };
 
@@ -381,13 +303,7 @@ fn init_cmd(file: &str, overwrite: bool) {
     println!("  {}", "Enter first page information".bold());
     println!();
 
-    let page = match mh::input_survey_page() {
-        Ok(v) => v,
-        Err(e) => {
-            println!(" {} {}", "Error: ".red(), e);
-            return;
-        },
-    };
+    let page = match_error!(mh::input_survey_page());
 
     //create and write config
     let mut config = SurveyConfig::new(title, desc, Some(survey_type), image, background_image, score);
@@ -401,13 +317,7 @@ fn init_cmd(file: &str, overwrite: bool) {
 
 fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: bool) {
     //get config
-    let config = match load_config(file) {
-        Ok(c) => c,
-        Err(e) => {
-            println!(" ❌ {} {}", "Error:".red(), e);
-            return;
-        },
-    };
+    let config = match_error!(load_config(file));
 
     //build table of contents
     let toc = mh::build_toc(&config);
@@ -417,26 +327,26 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
         //extract and check path elements
         let split_path: Vec<&str> = path.split_terminator(['/', '\\']).collect();
         if split_path.len() > 2 {
-            println!(" {} path argument in wrong format. Should be one or two numbers, specifying the page and element, separated by '/'", "Error:".red(),);
+            println!(" ❌ {} path argument in wrong format. Should be one or two numbers, specifying the page and element, separated by '/'", "Error:".red(),);
             return;
         }
         let Ok(page_select) = split_path[0].parse::<usize>() else {
-            println!(" {} path argument in wrong format. '{}' not a number", "Error:".red(), split_path[0]);
+            println!(" ❌ {} path argument in wrong format. '{}' not a number", "Error:".red(), split_path[0]);
             return;
         };
         if page_select > toc.pages.len() {
-            println!(" {} only {} pages in survey, but requested #{}", "Error:".red(), toc.pages.len(), page_select);
+            println!(" ❌ {} only {} pages in survey, but requested #{}", "Error:".red(), toc.pages.len(), page_select);
             return;
         }
         let page_select = page_select - 1; //adjust to 0 based index
         let element_select = if split_path.len() > 1 {
             let Ok(val) = split_path[1].parse::<usize>() else {
-                println!(" {} path argument in wrong format. '{}' not a number", "Error:".red(), split_path[1]);
+                println!(" ❌ {} path argument in wrong format. '{}' not a number", "Error:".red(), split_path[1]);
                 return;
             };
             if val > toc.pages[page_select].elements.len() {
                 println!(
-                    " {} only {} elements in page {}, but requested element {}",
+                    " ❌ {} only {} elements in page {}, but requested element {}",
                     "Error:".red(),
                     toc.pages[page_select].elements.len(),
                     page_select + 1,

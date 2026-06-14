@@ -169,3 +169,25 @@ pub fn query_score_settings() -> Result<ScoreSettings, inquire::InquireError> {
         },
     }
 }
+
+#[macro_export]
+macro_rules! match_error {
+    ( $prompt:expr ) => {
+        match $prompt {
+            Ok(v) => v,
+            Err(e) => {
+                println!(" ❌ {} {}", "Error: ".red(), e);
+                return;
+            },
+        }
+    };
+    ( $prompt:expr, $ok:ident, $ok_transform:expr ) => {
+        match $prompt {
+            Ok($ok) => $ok_transform,
+            Err(e) => {
+                println!(" ❌ {} {}", "Error: ".red(), e);
+                return;
+            },
+        }
+    };
+}
