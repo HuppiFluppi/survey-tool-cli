@@ -185,7 +185,7 @@ fn edit_survey_details(file: &str) {
             Ok(s) if s.is_empty() => None,
             Ok(s) => Some(s),
             Err(e) => {
-                println!(" ❌ {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error:".red(), e);
                 return;
             },
         };
@@ -204,7 +204,7 @@ fn edit_survey_details(file: &str) {
             Ok(s) if s.is_empty() => None,
             Ok(s) => Some(s),
             Err(e) => {
-                println!(" ❌ {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error:".red(), e);
                 return;
             },
         };
@@ -214,13 +214,13 @@ fn edit_survey_details(file: &str) {
     if fields.contains(&mh::SurveyDetailFields::Score) {
         config.score = match inquire::Confirm::new("Remove score settings?").with_default(config.survey_type == SurveyType::Survey).prompt() {
             Err(e) => {
-                println!(" ❌ {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error:".red(), e);
                 return;
             },
             Ok(false) => match mh::query_score_settings() {
                 Ok(s) => Some(s),
                 Err(e) => {
-                    println!(" ❌ {} {}", "Error: ".red(), e);
+                    println!(" ❌ {} {}", "Error:".red(), e);
                     return;
                 },
             },
@@ -241,7 +241,7 @@ fn remove_cmd(file: &str) {
 
     //check page count
     if config.pages.len() < 2 {
-        println!(" ❌ {} Can't remove page from single page survey", "Error: ".red());
+        println!(" ❌ {} Can't remove page from single page survey", "Error:".red());
         return;
     }
 
@@ -252,7 +252,7 @@ fn remove_cmd(file: &str) {
     //confirm remove
     match inquire::Confirm::new(&format!("Confirm removal of page {}", page.index + 1)).with_default(false).prompt() {
         Err(e) => {
-            println!(" ❌ {} {}", "Error: ".red(), e);
+            println!(" ❌ {} {}", "Error:".red(), e);
             return;
         },
         Ok(false) => {
@@ -290,7 +290,8 @@ fn init_cmd(file: &str, overwrite: bool) {
     let image = match_error!(inquire::Text::new("Enter optional image path (skip with ESC):").prompt_skippable(), ok, ok.filter(|t| !t.trim().is_empty()));
 
     //input optional background image
-    let background_image = match_error!(inquire::Text::new("Enter optional background image path (skip with ESC):").prompt_skippable(), ok, ok.filter(|t| !t.trim().is_empty()));
+    let background_image =
+        match_error!(inquire::Text::new("Enter optional background image path (skip with ESC):").prompt_skippable(), ok, ok.filter(|t| !t.trim().is_empty()));
 
     //get score info on quizes
     let score: Option<ScoreSettings> = match survey_type {

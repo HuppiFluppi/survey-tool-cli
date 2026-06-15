@@ -176,7 +176,7 @@ macro_rules! match_error {
         match $prompt {
             Ok(v) => v,
             Err(e) => {
-                println!(" ❌ {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error:".red(), e);
                 return;
             },
         }
@@ -185,7 +185,7 @@ macro_rules! match_error {
         match $prompt {
             Ok($ok) => $ok_transform,
             Err(e) => {
-                println!(" ❌ {} {}", "Error: ".red(), e);
+                println!(" ❌ {} {}", "Error:".red(), e);
                 return;
             },
         }
