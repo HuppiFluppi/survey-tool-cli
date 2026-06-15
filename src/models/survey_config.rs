@@ -68,14 +68,17 @@ impl SurveyConfig {
         SurveyConfig { title, description, survey_type: survey_type.unwrap_or(SurveyType::Survey), image, background_image, score, pages: Vec::new() }
     }
 
-    pub fn add_page(&mut self, page: SurveyPage) {
+    /// add a page to the survey and returns its index
+    pub fn add_page(&mut self, page: SurveyPage) -> usize{
         self.pages.push(page);
+        self.pages.len()-1
     }
 
+    /// Removes a page from the survey and returns the removed page
     /// #Panics
     /// Panics if index is out of bounds.
-    pub fn remove_page(&mut self, index: usize) {
-        self.pages.remove(index);
+    pub fn remove_page(&mut self, index: usize) -> SurveyPage {
+        self.pages.remove(index)
     }
 }
 
@@ -180,12 +183,15 @@ impl SurveyPage {
         SurveyPage { title, description, image, conditional, content: Vec::new() }
     }
 
-    pub fn add_content(&mut self, content: SurveyPageContent) {
+    // Add content to a survey page and returns the index
+    pub fn add_content(&mut self, content: SurveyPageContent) -> usize {
         self.content.push(content);
+        self.content.len()-1
     }
 
-    pub fn remove_content(&mut self, index: usize) {
-        self.content.remove(index);
+    // Remove content from a survey page, returning the removed element
+    pub fn remove_content(&mut self, index: usize) -> SurveyPageContent {
+        self.content.remove(index)
     }
 }
 

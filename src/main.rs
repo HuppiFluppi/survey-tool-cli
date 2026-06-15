@@ -86,9 +86,11 @@ enum ConfigSubcommand {
     // #[command(visible_alias = "np")]
     // AddPage,
 
-    // /// Edit an existing survey page
-    // #[command(visible_alias = "ep")]
-    // EditPage,
+
+    /// Moves a page
+    #[command(visible_alias = "mv")]
+    MovePage,
+
     /// Remove a survey page
     #[command(visible_alias = "rm")]
     RemovePage,
@@ -136,9 +138,44 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
         ConfigSubcommand::List { path, show_elements, no_header } => list_cmd(file, path.as_ref(), *show_elements, *no_header),
         ConfigSubcommand::Init { overwrite } => init_cmd(file, *overwrite),
         ConfigSubcommand::SurveyDetails => edit_survey_details(file),
-        // ConfigSubcommand::AddPage { num } => todo!(),
-        // ConfigSubcommand::EditPage { page } => todo!(),
+        ConfigSubcommand::MovePage => move_page(file),
         ConfigSubcommand::RemovePage => remove_cmd(file),
+    }
+}
+
+fn move_page(file: &str) {
+    //get config
+    let mut config = match_error!(load_config(file));
+
+    if config.pages.len() < 2 {
+        println!(" ❌ {} Only 1 page in survey. Move not possible", "Error:".red());
+        return;
+    }
+
+    //select page to move
+    let page_options: Vec<_> = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+    let page_select = match_error!(inquire::Select::new("Select page to move", page_options).prompt());
+    let page = config.pages.remove(page_select.index);
+
+    //select destination
+    let mut destination_options: Vec<_> = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+    destination_options.push(mh::PageSelectOption { title: Some("<Last>".to_string()), index: destination_options.len() });
+    
+    let dest_select =
+        match_error!(inquire::Select::new("Select where to move", destination_options).with_help_message("Page will move before selected").prompt());
+
+    if page_select.index == dest_select.index {
+        println!(" {}", "Selected same slot/index. No change".yellow());
+        return;
+    }
+
+    //add page back
+    config.pages.insert(dest_select.index, page);
+
+    //save
+    match save_config(file, true, &config) {
+        Ok(_) => println!(" 👍 successfully moved page"),
+        Err(e) => println!(" ❌ {} {}", "Error:".red(), e),
     }
 }
 
