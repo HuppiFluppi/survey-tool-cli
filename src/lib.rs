@@ -16,7 +16,7 @@ mod config;
 mod models;
 mod setup;
 
-pub use crate::models::survey_config::{ConditionalSettings, LeaderboardSettings, ScoreSettings, SurveyConfig, SurveyPage, SurveyType};
+pub use crate::models::survey_config::*;
 pub use models::error::STCError;
 pub use models::result::CheckResult;
 

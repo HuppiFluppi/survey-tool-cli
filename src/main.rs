@@ -82,10 +82,13 @@ enum ConfigSubcommand {
     #[command(visible_alias = "sd")]
     SurveyDetails,
 
-    // /// Add a new survey page
-    // #[command(visible_alias = "np")]
-    // AddPage,
+    /// Add a new survey page
+    #[command(visible_alias = "np")]
+    AddPage,
 
+    /// Edit an existing survey page
+    #[command(visible_alias = "ep")]
+    EditPage,
 
     /// Moves a page
     #[command(visible_alias = "mv")]
@@ -111,7 +114,7 @@ fn display_check_result(result: Result<CheckResult, STCError>, verbose: bool) {
     match result {
         Err(err) => {
             println!(" ❌ {} {}", "Error:".red(), err);
-            return
+            return;
         },
         Ok(result) => {
             if result.all_ok {
@@ -138,6 +141,8 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
         ConfigSubcommand::List { path, show_elements, no_header } => list_cmd(file, path.as_ref(), *show_elements, *no_header),
         ConfigSubcommand::Init { overwrite } => init_cmd(file, *overwrite),
         ConfigSubcommand::SurveyDetails => edit_survey_details(file),
+        ConfigSubcommand::AddPage => edit_page(file, true),
+        ConfigSubcommand::EditPage => edit_page(file, false),
         ConfigSubcommand::MovePage => move_page(file),
         ConfigSubcommand::RemovePage => remove_cmd(file),
     }
@@ -158,9 +163,10 @@ fn move_page(file: &str) {
     let page = config.pages.remove(page_select.index);
 
     //select destination
-    let mut destination_options: Vec<_> = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+    let mut destination_options: Vec<_> =
+        config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
     destination_options.push(mh::PageSelectOption { title: Some("<Last>".to_string()), index: destination_options.len() });
-    
+
     let dest_select =
         match_error!(inquire::Select::new("Select where to move", destination_options).with_help_message("Page will move before selected").prompt());
 
@@ -175,6 +181,77 @@ fn move_page(file: &str) {
     //save
     match save_config(file, true, &config) {
         Ok(_) => println!(" 👍 successfully moved page"),
+        Err(e) => println!(" ❌ {} {}", "Error:".red(), e),
+    }
+}
+
+fn edit_page(file: &str, add: bool) {
+    //get config
+    let mut config = match_error!(load_config(file));
+
+    //create new page if [add] == true
+    let page_index = if add {
+        config.add_page(SurveyPage::default())
+    } else {
+        //select existing page
+        let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+        match_error!(inquire::Select::new("Select page to edit", options).prompt()).index
+    };
+    println!();
+
+    //edit page details
+    match inquire::Confirm::new("Edit page details?").with_default(false).prompt() {
+        Err(e) => {
+            println!(" ❌ {} {}", "Error:".red(), e);
+            return;
+        },
+        Ok(false) => (),
+        Ok(true) => match_error!(mh::edit_page_details(config.pages.get_mut(page_index).unwrap())),
+    };
+    println!();
+
+    //edit page contents - loop: add new, remove, quit or edit existing
+    let default_actions = vec![
+        mh::SurveyContentEditActions::NewAction,
+        mh::SurveyContentEditActions::MoveAction,
+        mh::SurveyContentEditActions::RemoveAction,
+        mh::SurveyContentEditActions::SaveAction,
+        mh::SurveyContentEditActions::SaveNQuitAction,
+        mh::SurveyContentEditActions::QuitNoSaveAction,
+    ];
+    loop {
+        let edit_options = config
+            .pages
+            .get(page_index)
+            .unwrap()
+            .content
+            .iter()
+            .enumerate()
+            .map(|(i, c)| mh::SurveyContentEditActions::ContentEdit { index: i, title: c.get_header().title.clone(), content_type: c.to_string() })
+            .collect();
+        let action_options = [default_actions.clone(), edit_options].concat();
+        let action_select = match_error!(inquire::Select::new("Select action", action_options).with_page_size(10).prompt());
+
+        match action_select {
+            mh::SurveyContentEditActions::NewAction => match_error!(mh::new_content(config.pages.get_mut(page_index).unwrap())),
+            mh::SurveyContentEditActions::QuitNoSaveAction => return,
+            mh::SurveyContentEditActions::SaveNQuitAction => break,
+            mh::SurveyContentEditActions::SaveAction => save_page(file, &config),
+            mh::SurveyContentEditActions::ContentEdit { index, .. } => {
+                match_error!(mh::edit_content(config.pages.get_mut(page_index).unwrap().content.get_mut(index).unwrap()))
+            },
+            mh::SurveyContentEditActions::RemoveAction => match_error!(mh::remove_content(config.pages.get_mut(page_index).unwrap())),
+            mh::SurveyContentEditActions::MoveAction => match_error!(mh::move_content(config.pages.get_mut(page_index).unwrap())),
+        }
+    }
+
+    //save
+    save_page(file, &config);
+}
+
+fn save_page(file: &str, config: &SurveyConfig) {
+    match save_config(file, true, config) {
+        Ok(_) => println!(" 👍 successfully saved page"),
         Err(e) => println!(" ❌ {} {}", "Error:".red(), e),
     }
 }
@@ -211,40 +288,12 @@ fn edit_survey_details(file: &str) {
 
     //edit image
     if fields.contains(&mh::SurveyDetailFields::Image) {
-        let mut prompt = inquire::Text::new("Input new image path:");
-
-        prompt = match &config.image {
-            Some(v) => prompt.with_initial_value(v),
-            None => prompt,
-        };
-
-        config.image = match prompt.with_help_message("Unset with empty").prompt() {
-            Ok(s) if s.is_empty() => None,
-            Ok(s) => Some(s),
-            Err(e) => {
-                println!(" ❌ {} {}", "Error:".red(), e);
-                return;
-            },
-        };
+        match_error!(mh::prompt_optional_textfield("Input new image path:", &mut config.image));
     }
 
     //edit background image
     if fields.contains(&mh::SurveyDetailFields::BackgroundImage) {
-        let mut prompt = inquire::Text::new("Input new background image path:");
-
-        prompt = match &config.background_image {
-            Some(v) => prompt.with_initial_value(v),
-            None => prompt,
-        };
-
-        config.background_image = match prompt.with_help_message("Unset with empty").prompt() {
-            Ok(s) if s.is_empty() => None,
-            Ok(s) => Some(s),
-            Err(e) => {
-                println!(" ❌ {} {}", "Error:".red(), e);
-                return;
-            },
-        };
+        match_error!(mh::prompt_optional_textfield("Input new background image path:", &mut config.background_image));
     }
 
     //edit score settings
@@ -254,7 +303,7 @@ fn edit_survey_details(file: &str) {
                 println!(" ❌ {} {}", "Error:".red(), e);
                 return;
             },
-            Ok(false) => match mh::query_score_settings() {
+            Ok(false) => match mh::input_score_settings() {
                 Ok(s) => Some(s),
                 Err(e) => {
                     println!(" ❌ {} {}", "Error:".red(), e);
@@ -332,7 +381,7 @@ fn init_cmd(file: &str, overwrite: bool) {
 
     //get score info on quizes
     let score: Option<ScoreSettings> = match survey_type {
-        SurveyType::Quiz => match_error!(mh::query_score_settings(), s, Some(s)),
+        SurveyType::Quiz => match_error!(mh::input_score_settings(), s, Some(s)),
         _ => None,
     };
 
@@ -341,7 +390,8 @@ fn init_cmd(file: &str, overwrite: bool) {
     println!("  {}", "Enter first page information".bold());
     println!();
 
-    let page = match_error!(mh::input_survey_page());
+    let mut page = SurveyPage::default();
+    match_error!(mh::edit_page_details(&mut page));
 
     //create and write config
     let mut config = SurveyConfig::new(title, desc, Some(survey_type), image, background_image, score);

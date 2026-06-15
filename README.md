@@ -116,7 +116,7 @@ survey-tool-cli --help
 
 ## Roadmap
 - [x] Add Github build pipeline for release
-- [ ] Add edit/create of configuration files
+- [x] Add edit/create of configuration files
 - [ ] Add interaction with survey-tool-server(s)
 - [ ] Refactor project with new insights and learnings in Rust
 

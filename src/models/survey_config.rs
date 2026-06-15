@@ -5,6 +5,7 @@
 
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumString, VariantNames};
 
 // helper functions to be used for serde default till https://github.com/serde-rs/serde/pull/3066 is available
 fn bool_true() -> bool {
@@ -69,9 +70,9 @@ impl SurveyConfig {
     }
 
     /// add a page to the survey and returns its index
-    pub fn add_page(&mut self, page: SurveyPage) -> usize{
+    pub fn add_page(&mut self, page: SurveyPage) -> usize {
         self.pages.push(page);
-        self.pages.len()-1
+        self.pages.len() - 1
     }
 
     /// Removes a page from the survey and returns the removed page
@@ -152,8 +153,8 @@ pub struct ConditionalSettings {
 }
 
 impl ConditionalSettings {
-    pub fn new(key: String) -> ConditionalSettings {
-        ConditionalSettings { key, values: Vec::new() }
+    pub fn new(key: String, values: Vec<String>) -> ConditionalSettings {
+        ConditionalSettings { key, values }
     }
 }
 
@@ -186,7 +187,12 @@ impl SurveyPage {
     // Add content to a survey page and returns the index
     pub fn add_content(&mut self, content: SurveyPageContent) -> usize {
         self.content.push(content);
-        self.content.len()-1
+        self.content.len() - 1
+    }
+
+    // Insert content to a survey page
+    pub fn insert_content(&mut self, index: usize, content: SurveyPageContent) {
+        self.content.insert(index, content);
     }
 
     // Remove content from a survey page, returning the removed element
@@ -195,7 +201,7 @@ impl SurveyPage {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SurveyPageContentHeader {
     // While type is part of the header, we need to use serde internally tagged enum representation to properly determine the enum variant.
     // This would clash with this definition. Ergo, type will end up in the yaml, but based on SurveyPageContent config and enum variant
@@ -221,7 +227,7 @@ pub struct SurveyPageContentHeader {
 //     Slider,
 // }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, EnumString, Display, VariantNames)]
 #[serde(rename_all = "lowercase", tag = "type")]
 pub enum SurveyPageContent {
     /// Free-text question.
@@ -285,20 +291,20 @@ pub enum SurveyPageContent {
 }
 
 impl SurveyPageContent {
-    pub fn type_string(&self) -> String {
+    pub fn get_header(&self) -> &SurveyPageContentHeader {
         match self {
-            SurveyPageContent::Text { .. } => "text".to_string(),
-            SurveyPageContent::Choice { .. } => "choice".to_string(),
-            SurveyPageContent::Data { .. } => "data".to_string(),
-            SurveyPageContent::DateTime { .. } => "datetime".to_string(),
-            SurveyPageContent::Rating { .. } => "rating".to_string(),
-            SurveyPageContent::Slider { .. } => "slider".to_string(),
-            SurveyPageContent::Likert { .. } => "likert".to_string(),
-            SurveyPageContent::Information { .. } => "information".to_string(),
+            SurveyPageContent::Text { header, config: _ } => header,
+            SurveyPageContent::Choice { header, config: _ } => header,
+            SurveyPageContent::Data { header, config: _ } => header,
+            SurveyPageContent::DateTime { header, config: _ } => header,
+            SurveyPageContent::Rating { header, config: _ } => header,
+            SurveyPageContent::Slider { header, config: _ } => header,
+            SurveyPageContent::Likert { header, config: _ } => header,
+            SurveyPageContent::Information { header, description: _, image: _ } => header,
         }
     }
 
-    pub fn get_header(&self) -> &SurveyPageContentHeader {
+    pub fn get_header_mut(&mut self) -> &mut SurveyPageContentHeader {
         match self {
             SurveyPageContent::Text { header, config: _ } => header,
             SurveyPageContent::Choice { header, config: _ } => header,
@@ -338,7 +344,7 @@ impl SurveyPageContent {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct TextConfig {
     #[serde(default = "bool_false")]
     pub multiline: bool,
@@ -354,7 +360,7 @@ pub struct TextConfig {
     pub correct_answer_list: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DataConfig {
     #[serde(default = "data_question_type")]
     pub datatype: DataQuestionType,
@@ -364,7 +370,7 @@ pub struct DataConfig {
     pub use_for_leaderboard: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DateTimeConfig {
     #[serde(default = "datetime_type")]
     pub input_type: DateTimeType,
@@ -380,7 +386,7 @@ pub struct DateTimeConfig {
     pub correct_date_answer: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ChoiceConfig {
     #[serde(default = "bool_false")]
     pub multiple: bool,
@@ -395,13 +401,13 @@ pub struct ChoiceConfig {
     pub choices: Vec<ChoiceItem>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct LikertConfig {
     pub choices: Vec<String>,
     pub statements: Vec<LikertStatement>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct RatingConfig {
     #[serde(default = "rating_level")]
     pub level: usize,
@@ -411,7 +417,7 @@ pub struct RatingConfig {
     pub color_gradient: RatingColorGradient,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct SliderConfig {
     #[serde(default = "bool_false")]
     pub range: bool,
@@ -431,7 +437,7 @@ pub struct SliderConfig {
     pub correct_answer: Option<f64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct ChoiceItem {
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -440,9 +446,16 @@ pub struct ChoiceItem {
     pub correct: bool,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+impl fmt::Display for ChoiceItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - score: {:?} - correct: {}", self.title, self.score, self.correct)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, VariantNames, Display, EnumString)]
 #[serde(rename_all = "lowercase")]
 pub enum DataQuestionType {
+    #[default]
     Name,
     Email,
     Phone,
@@ -452,17 +465,19 @@ pub enum DataQuestionType {
     Birthday,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, VariantNames, Display, EnumString)]
 #[serde(rename_all = "lowercase")]
 pub enum DateTimeType {
     Date,
     Time,
+    #[default]
     DateTime,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, VariantNames, Display, EnumString)]
 #[serde(rename_all = "lowercase")]
 pub enum RatingSymbol {
+    #[default]
     Star,
     Heart,
     Like,
@@ -470,20 +485,27 @@ pub enum RatingSymbol {
     Number,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, VariantNames, Display, EnumString)]
 #[serde(rename_all = "lowercase")]
 pub enum RatingColorGradient {
+    #[default]
     None,
     Red2Green,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct LikertStatement {
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub correct_choice: Option<String>,
+}
+
+impl fmt::Display for LikertStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - score: {:?} - correct: {:?}", self.title, self.score, self.correct_choice)
+    }
 }
 
 // ------- Tests
