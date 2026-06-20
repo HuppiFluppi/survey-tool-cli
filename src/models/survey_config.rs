@@ -201,7 +201,7 @@ impl SurveyPage {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SurveyPageContentHeader {
     // While type is part of the header, we need to use serde internally tagged enum representation to properly determine the enum variant.
     // This would clash with this definition. Ergo, type will end up in the yaml, but based on SurveyPageContent config and enum variant
@@ -212,6 +212,12 @@ pub struct SurveyPageContentHeader {
     pub required: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conditional: Option<ConditionalSettings>,
+}
+
+impl Default for SurveyPageContentHeader {
+    fn default() -> Self {
+        Self { title: Default::default(), required: true, conditional: None }
+    }
 }
 
 // #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -360,7 +366,7 @@ pub struct TextConfig {
     pub correct_answer_list: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DataConfig {
     #[serde(default = "data_question_type")]
     pub datatype: DataQuestionType,
@@ -368,6 +374,12 @@ pub struct DataConfig {
     pub validation_pattern: Option<String>,
     #[serde(default = "bool_true")]
     pub use_for_leaderboard: bool,
+}
+
+impl Default for DataConfig {
+    fn default() -> Self {
+        Self { datatype: Default::default(), validation_pattern: Default::default(), use_for_leaderboard: true }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -386,7 +398,7 @@ pub struct DateTimeConfig {
     pub correct_date_answer: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChoiceConfig {
     #[serde(default = "bool_false")]
     pub multiple: bool,
@@ -401,13 +413,26 @@ pub struct ChoiceConfig {
     pub choices: Vec<ChoiceItem>,
 }
 
+impl Default for ChoiceConfig {
+    fn default() -> Self {
+        Self {
+            multiple: Default::default(),
+            limit: 2,
+            dropdown: Default::default(),
+            horizontal: true,
+            conditional_key: Default::default(),
+            choices: Default::default(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct LikertConfig {
     pub choices: Vec<String>,
     pub statements: Vec<LikertStatement>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RatingConfig {
     #[serde(default = "rating_level")]
     pub level: usize,
@@ -417,7 +442,13 @@ pub struct RatingConfig {
     pub color_gradient: RatingColorGradient,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+impl Default for RatingConfig {
+    fn default() -> Self {
+        Self { level: 5, symbol: Default::default(), color_gradient: Default::default() }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SliderConfig {
     #[serde(default = "bool_false")]
     pub range: bool,
@@ -435,6 +466,21 @@ pub struct SliderConfig {
     pub score: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub correct_answer: Option<f64>,
+}
+
+impl Default for SliderConfig {
+    fn default() -> Self {
+        Self {
+            range: Default::default(),
+            start: Default::default(),
+            end: 1.0,
+            steps: Default::default(),
+            show_decimals: Default::default(),
+            unit: Default::default(),
+            score: Default::default(),
+            correct_answer: Default::default(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
