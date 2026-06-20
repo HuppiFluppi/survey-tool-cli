@@ -704,7 +704,7 @@ macro_rules! match_error {
 // ##############################
 // ### Content selection type ###
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum SurveyContentEditActions {
     NewAction,
     RemoveAction,

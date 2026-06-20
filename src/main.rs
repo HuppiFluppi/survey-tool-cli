@@ -84,11 +84,19 @@ enum ConfigSubcommand {
 
     /// Add a new survey page
     #[command(visible_alias = "np")]
-    AddPage,
+    AddPage {
+        /// Automatically save on distinct changes
+        #[arg(short, long)]
+        auto_save: bool,
+    },
 
     /// Edit an existing survey page
     #[command(visible_alias = "ep")]
-    EditPage,
+    EditPage {
+        /// Automatically save on distinct changes
+        #[arg(short, long)]
+        auto_save: bool,
+    },
 
     /// Moves a page
     #[command(visible_alias = "mv")]
@@ -141,8 +149,8 @@ fn config_cmd(file: &str, subcommand: &ConfigSubcommand) {
         ConfigSubcommand::List { path, show_elements, no_header } => list_cmd(file, path.as_ref(), *show_elements, *no_header),
         ConfigSubcommand::Init { overwrite } => init_cmd(file, *overwrite),
         ConfigSubcommand::SurveyDetails => edit_survey_details(file),
-        ConfigSubcommand::AddPage => edit_page(file, true),
-        ConfigSubcommand::EditPage => edit_page(file, false),
+        ConfigSubcommand::AddPage { auto_save } => edit_page(file, true, *auto_save),
+        ConfigSubcommand::EditPage { auto_save } => edit_page(file, false, *auto_save),
         ConfigSubcommand::MovePage => move_page(file),
         ConfigSubcommand::RemovePage => remove_cmd(file),
     }
@@ -185,7 +193,7 @@ fn move_page(file: &str) {
     }
 }
 
-fn edit_page(file: &str, add: bool) {
+fn edit_page(file: &str, add: bool, auto_save: bool) {
     //get config
     let mut config = match_error!(load_config(file));
 
@@ -206,7 +214,13 @@ fn edit_page(file: &str, add: bool) {
             return;
         },
         Ok(false) => (),
-        Ok(true) => match_error!(mh::edit_page_details(config.pages.get_mut(page_index).unwrap())),
+        Ok(true) => {
+            match_error!(mh::edit_page_details(config.pages.get_mut(page_index).unwrap()));
+            if auto_save {
+                save_page(file, &config);
+                println!("  💾 auto saved")
+            }
+        },
     };
     println!();
 
@@ -242,6 +256,11 @@ fn edit_page(file: &str, add: bool) {
             },
             mh::SurveyContentEditActions::RemoveAction => match_error!(mh::remove_content(config.pages.get_mut(page_index).unwrap())),
             mh::SurveyContentEditActions::MoveAction => match_error!(mh::move_content(config.pages.get_mut(page_index).unwrap())),
+        }
+
+        if auto_save && action_select != mh::SurveyContentEditActions::SaveAction {
+            save_page(file, &config);
+            println!("  💾 auto saved")
         }
     }
 
