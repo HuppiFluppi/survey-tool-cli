@@ -299,27 +299,27 @@ pub enum SurveyPageContent {
 impl SurveyPageContent {
     pub fn get_header(&self) -> &SurveyPageContentHeader {
         match self {
-            SurveyPageContent::Text { header, config: _ } => header,
-            SurveyPageContent::Choice { header, config: _ } => header,
-            SurveyPageContent::Data { header, config: _ } => header,
-            SurveyPageContent::DateTime { header, config: _ } => header,
-            SurveyPageContent::Rating { header, config: _ } => header,
-            SurveyPageContent::Slider { header, config: _ } => header,
-            SurveyPageContent::Likert { header, config: _ } => header,
-            SurveyPageContent::Information { header, description: _, image: _ } => header,
+            SurveyPageContent::Text { header, .. } => header,
+            SurveyPageContent::Choice { header, .. } => header,
+            SurveyPageContent::Data { header, .. } => header,
+            SurveyPageContent::DateTime { header, .. } => header,
+            SurveyPageContent::Rating { header, .. } => header,
+            SurveyPageContent::Slider { header, .. } => header,
+            SurveyPageContent::Likert { header, .. } => header,
+            SurveyPageContent::Information { header, .. } => header,
         }
     }
 
     pub fn get_header_mut(&mut self) -> &mut SurveyPageContentHeader {
         match self {
-            SurveyPageContent::Text { header, config: _ } => header,
-            SurveyPageContent::Choice { header, config: _ } => header,
-            SurveyPageContent::Data { header, config: _ } => header,
-            SurveyPageContent::DateTime { header, config: _ } => header,
-            SurveyPageContent::Rating { header, config: _ } => header,
-            SurveyPageContent::Slider { header, config: _ } => header,
-            SurveyPageContent::Likert { header, config: _ } => header,
-            SurveyPageContent::Information { header, description: _, image: _ } => header,
+            SurveyPageContent::Text { header, .. } => header,
+            SurveyPageContent::Choice { header, .. } => header,
+            SurveyPageContent::Data { header, .. } => header,
+            SurveyPageContent::DateTime { header, .. } => header,
+            SurveyPageContent::Rating { header, .. } => header,
+            SurveyPageContent::Slider { header, .. } => header,
+            SurveyPageContent::Likert { header, .. } => header,
+            SurveyPageContent::Information { header, .. } => header,
         }
     }
 
@@ -334,11 +334,11 @@ impl SurveyPageContent {
             SurveyPageContent::Likert { config, .. } => SurveyPageContent::format_fields(config),
             SurveyPageContent::Information { description, image, .. } => {
                 let mut parts = Vec::new();
-                if description.is_some() {
-                    parts.push(format!("description: {}", description.as_deref().unwrap()));
+                if let Some(desc) = description {
+                    parts.push(format!("description: {}", desc));
                 }
-                if image.is_some() {
-                    parts.push(format!("image: {}", image.as_deref().unwrap()));
+                if let Some(image) = image {
+                    parts.push(format!("image: {}", image));
                 }
                 parts.join("\n")
             },

@@ -30,7 +30,7 @@ pub fn load(file: &path::Path) -> Result<SurveyConfig, STCError> {
         )));
     }
 
-    let mut config: SurveyConfig = serde_saphyr::from_str(documents.first().unwrap())?;
+    let mut config: SurveyConfig = serde_saphyr::from_str(documents[0])?;
     for page_document in documents.iter().skip(1) {
         let page = serde_saphyr::from_str(page_document)?;
         config.add_page(page);

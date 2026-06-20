@@ -27,7 +27,7 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
 
     //check java installation
     let output = match process::Command::new("java").arg("--version").output() {
-        Ok(out) if out.status.success() => Some(String::from_utf8_lossy(&out.stdout).to_string()),
+        Ok(out) if out.status.success() => Some(String::from_utf8_lossy(&out.stdout).into_owned()),
         _ => {
             if let Ok(java_home) = env::var("JAVA_HOME") {
                 let java_path = format!("{java_home}/bin/java");
