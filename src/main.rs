@@ -58,7 +58,7 @@ enum ConfigSubcommand {
     /// List the contents of a survey config file
     #[command(visible_alias = "ls")]
     List {
-        /// path traversing the config structure. e.g. '1/1' for first page, first element'
+        /// path traversing the config structure. e.g. '1/1' for first page, first element
         path: Option<String>,
 
         /// List elements(questions)
@@ -166,13 +166,13 @@ fn move_page(file: &str) {
     }
 
     //select page to move
-    let page_options: Vec<_> = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+    let page_options: Vec<_> = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.clone(), index: i }).collect();
     let page_select = match_error!(inquire::Select::new("Select page to move", page_options).prompt());
     let page = config.pages.remove(page_select.index);
 
     //select destination
     let mut destination_options: Vec<_> =
-        config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+        config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.clone(), index: i }).collect();
     destination_options.push(mh::PageSelectOption { title: Some("<Last>".to_string()), index: destination_options.len() });
 
     let dest_select =
@@ -202,7 +202,7 @@ fn edit_page(file: &str, add: bool, auto_save: bool) {
         config.add_page(SurveyPage::default())
     } else {
         //select existing page
-        let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+        let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.clone(), index: i }).collect();
         match_error!(inquire::Select::new("Select page to edit", options).prompt()).index
     };
     println!();
@@ -218,10 +218,10 @@ fn edit_page(file: &str, add: bool, auto_save: bool) {
             match_error!(mh::edit_page_details(config.pages.get_mut(page_index).unwrap()));
             if auto_save {
                 save_page(file, &config);
-                println!("  💾 auto saved")
+                println!("  💾 auto saved");
             }
         },
-    };
+    }
     println!();
 
     //edit page contents - loop: add new, remove, quit or edit existing
@@ -260,7 +260,7 @@ fn edit_page(file: &str, add: bool, auto_save: bool) {
 
         if auto_save && action_select != mh::SurveyContentEditActions::SaveAction {
             save_page(file, &config);
-            println!("  💾 auto saved")
+            println!("  💾 auto saved");
         }
     }
 
@@ -351,7 +351,7 @@ fn remove_cmd(file: &str) {
     }
 
     //select page
-    let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.to_owned(), index: i }).collect();
+    let options = config.pages.iter().enumerate().map(|(i, page)| mh::PageSelectOption { title: page.title.clone(), index: i }).collect();
     let page = match_error!(inquire::Select::new("Select page to delete", options).prompt());
 
     //confirm remove
@@ -365,7 +365,7 @@ fn remove_cmd(file: &str) {
             return;
         },
         Ok(_) => (),
-    };
+    }
 
     //remove page
     config.remove_page(page.index);
@@ -398,10 +398,10 @@ fn init_cmd(file: &str, overwrite: bool) {
     let background_image =
         match_error!(inquire::Text::new("Enter optional background image path (skip with ESC):").prompt_skippable(), ok, ok.filter(|t| !t.trim().is_empty()));
 
-    //get score info on quizes
+    //get score info on quizzes
     let score: Option<ScoreSettings> = match survey_type {
         SurveyType::Quiz => match_error!(mh::input_score_settings(), s, Some(s)),
-        _ => None,
+        SurveyType::Survey => None,
     };
 
     //input first page
@@ -434,7 +434,7 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
         //extract and check path elements
         let split_path: Vec<&str> = path.split_terminator(['/', '\\']).collect();
         if split_path.len() > 2 {
-            println!(" ❌ {} path argument in wrong format. Should be one or two numbers, specifying the page and element, separated by '/'", "Error:".red(),);
+            println!(" ❌ {} path argument in wrong format. Should be one or two numbers, specifying the page and element, separated by '/'", "Error:".red());
             return;
         }
         let Ok(page_select) = split_path[0].parse::<usize>() else {
@@ -483,9 +483,9 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
             println!();
             println!("   Config:");
             for line in element.config.lines() {
-                println!("       {}", line);
+                println!("       {line}");
             }
-            println!()
+            println!();
         } else {
             let page = &toc.pages[page_select];
             println!();
@@ -508,7 +508,7 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
                 }
                 println!("  {:>2}.  {:12}  {:5}  {}", i + 1, element.element_type, flags, element.element_title);
             }
-            println!()
+            println!();
         }
     } else {
         println!();
@@ -524,10 +524,10 @@ fn list_cmd(file: &str, path: Option<&String>, show_elements: bool, no_header: b
             println!("  {:>2}. {}", i + 1, page.page_title);
             if show_elements {
                 for (k, element) in page.elements.iter().enumerate() {
-                    println!("      └── {:>2}. {}", k + 1, element.element_title)
+                    println!("      └── {:>2}. {}", k + 1, element.element_title);
                 }
             }
         }
-        println!()
+        println!();
     }
 }

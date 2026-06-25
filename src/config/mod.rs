@@ -5,14 +5,14 @@
 use regex::RegexBuilder;
 
 use crate::models::error::STCError;
-use crate::models::survey_config::*;
+use crate::models::survey_config::SurveyConfig;
 use std::io;
 use std::{fs, path};
 
 pub fn load(file: &path::Path) -> Result<SurveyConfig, STCError> {
     //check file exists
     if !fs::exists(file)? {
-        return Err(STCError::IO(io::Error::new(std::io::ErrorKind::NotFound, format!("File '{}' not found", file.display()))));
+        return Err(STCError::IO(io::Error::new(io::ErrorKind::NotFound, format!("File '{}' not found", file.display()))));
     }
 
     //check file extension
@@ -43,7 +43,7 @@ pub fn save(file: &path::Path, overwrite: bool, config: &SurveyConfig) -> Result
     //check file exists
     if fs::exists(file)? && !overwrite {
         return Err(STCError::IO(io::Error::new(
-            std::io::ErrorKind::AlreadyExists,
+            io::ErrorKind::AlreadyExists,
             format!("File '{}' already exists and overwrite flag is missing", file.display()),
         )));
     }
@@ -59,7 +59,7 @@ pub fn save(file: &path::Path, overwrite: bool, config: &SurveyConfig) -> Result
     //save file
     let mut documents = Vec::with_capacity(config.pages.len());
     documents.push(serde_saphyr::to_string(config)?);
-    for page in config.pages.iter() {
+    for page in &config.pages {
         documents.push(serde_saphyr::to_string(page)?);
     }
 
@@ -71,13 +71,13 @@ pub fn save(file: &path::Path, overwrite: bool, config: &SurveyConfig) -> Result
 fn check_file_ext(file: &path::Path) -> Result<(), STCError> {
     let Some(ext) = file.extension() else {
         return Err(STCError::IO(io::Error::new(
-            std::io::ErrorKind::Unsupported,
+            io::ErrorKind::Unsupported,
             format!("File '{}' has no extension (.yaml or .yml needed)", file.display()),
         )));
     };
     let ext = ext.to_ascii_lowercase();
     if ext != "yaml" && ext != "yml" {
-        return Err(STCError::IO(io::Error::new(std::io::ErrorKind::Unsupported, format!("File '{}' has no Yaml extension (.yaml or .yml)", file.display()))));
+        return Err(STCError::IO(io::Error::new(io::ErrorKind::Unsupported, format!("File '{}' has no Yaml extension (.yaml or .yml)", file.display()))));
     }
     Ok(())
 }

@@ -18,12 +18,14 @@ pub mod result {
         pub output: Option<String>,
     }
     impl CheckResult {
-        /// create an empty CheckResult with `all_ok` true
+        /// create an empty [CheckResult] with `all_ok` true
+        #[must_use]
         pub fn all_ok() -> CheckResult {
             CheckResult { all_ok: true, success_list: Vec::new(), error_list: Vec::new(), output: None }
         }
 
-        /// create an empty CheckResult with `all_ok` false
+        /// create an empty [CheckResult] with `all_ok` false
+        #[must_use]
         pub fn not_ok() -> CheckResult {
             CheckResult { all_ok: false, success_list: Vec::new(), error_list: Vec::new(), output: None }
         }
@@ -50,12 +52,12 @@ pub mod error {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 STCError::Unspecified => write!(f, "Unspecified error"),
-                STCError::YAMLParse(error) => write!(f, "YAML parse error: {}", error),
-                STCError::YAMLFormat(message) => write!(f, "YAML format error: {}", message),
-                STCError::YAMLSerialization(error) => write!(f, "YAML serialization error: {}", error),
-                STCError::SchemaLoad(error) => write!(f, "Error loading schema: {}", error),
-                STCError::SchemaValidation(error) => write!(f, "Error on schema validation: {}", error),
-                STCError::IO(error) => write!(f, "IO error: {}", error),
+                STCError::YAMLParse(error) => write!(f, "YAML parse error: {error}"),
+                STCError::YAMLFormat(message) => write!(f, "YAML format error: {message}"),
+                STCError::YAMLSerialization(error) => write!(f, "YAML serialization error: {error}"),
+                STCError::SchemaLoad(error) => write!(f, "Error loading schema: {error}"),
+                STCError::SchemaValidation(error) => write!(f, "Error on schema validation: {error}"),
+                STCError::IO(error) => write!(f, "IO error: {error}"),
             }
         }
     }

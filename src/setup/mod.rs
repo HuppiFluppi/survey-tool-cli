@@ -51,20 +51,17 @@ pub fn check() -> Result<result::CheckResult, error::STCError> {
     //check java version
     if let Some(out) = output {
         let re = Regex::new(r" (\d+).(\d+).(\d+) ").unwrap();
-        match re.captures(&out) {
-            Some(captures) => {
-                let found = captures.get_match().as_str().trim();
-                if captures[1].parse::<usize>().unwrap_or_default() < MINIMUM_JAVA_VERSION {
-                    result.all_ok = false;
-                    result.error_list.push(format!("Installed Java version too low. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
-                } else {
-                    result.success_list.push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
-                }
-            },
-            None => {
+        if let Some(captures) = re.captures(&out) {
+            let found = captures.get_match().as_str().trim();
+            if captures[1].parse::<usize>().unwrap_or_default() < MINIMUM_JAVA_VERSION {
                 result.all_ok = false;
-                result.error_list.push("Could not detect any Java version".to_string());
-            },
+                result.error_list.push(format!("Installed Java version too low. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
+            } else {
+                result.success_list.push(format!("Installed Java version good. Minimum needed: {MINIMUM_JAVA_VERSION} - found: {found}"));
+            }
+        } else {
+            result.all_ok = false;
+            result.error_list.push("Could not detect any Java version".to_string());
         }
     } else {
         result.all_ok = false;

@@ -58,6 +58,7 @@ pub struct SurveyConfig {
 }
 
 impl SurveyConfig {
+    #[must_use]
     pub fn new(
         title: String,
         description: String,
@@ -91,7 +92,7 @@ pub enum SurveyType {
 }
 
 impl fmt::Display for SurveyType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SurveyType::Survey => write!(f, "survey"),
             SurveyType::Quiz => write!(f, "quiz"),
@@ -116,6 +117,7 @@ impl Default for ScoreSettings {
 }
 
 impl ScoreSettings {
+    #[must_use]
     pub fn new(show_question_scores: bool, show_leaderboard: bool, leaderboard: LeaderboardSettings) -> ScoreSettings {
         ScoreSettings { show_question_scores, show_leaderboard, leaderboard }
     }
@@ -140,6 +142,7 @@ impl Default for LeaderboardSettings {
 }
 
 impl LeaderboardSettings {
+    #[must_use]
     pub fn new(show_scores: bool, show_placeholder: bool, limit: usize, background_image: Option<String>) -> LeaderboardSettings {
         LeaderboardSettings { show_scores, show_placeholder, limit, background_image }
     }
@@ -153,6 +156,7 @@ pub struct ConditionalSettings {
 }
 
 impl ConditionalSettings {
+    #[must_use]
     pub fn new(key: String, values: Vec<String>) -> ConditionalSettings {
         ConditionalSettings { key, values }
     }
@@ -180,6 +184,7 @@ impl Default for SurveyPage {
 }
 
 impl SurveyPage {
+    #[must_use]
     pub fn new(title: Option<String>, description: Option<String>, image: Option<String>, conditional: Option<ConditionalSettings>) -> SurveyPage {
         SurveyPage { title, description, image, conditional, content: Vec::new() }
     }
@@ -216,7 +221,7 @@ pub struct SurveyPageContentHeader {
 
 impl Default for SurveyPageContentHeader {
     fn default() -> Self {
-        Self { title: Default::default(), required: true, conditional: None }
+        Self { title: String::default(), required: true, conditional: None }
     }
 }
 
@@ -335,10 +340,10 @@ impl SurveyPageContent {
             SurveyPageContent::Information { description, image, .. } => {
                 let mut parts = Vec::new();
                 if let Some(desc) = description {
-                    parts.push(format!("description: {}", desc));
+                    parts.push(format!("description: {desc}"));
                 }
                 if let Some(image) = image {
-                    parts.push(format!("image: {}", image));
+                    parts.push(format!("image: {image}"));
                 }
                 parts.join("\n")
             },
@@ -378,7 +383,7 @@ pub struct DataConfig {
 
 impl Default for DataConfig {
     fn default() -> Self {
-        Self { datatype: Default::default(), validation_pattern: Default::default(), use_for_leaderboard: true }
+        Self { datatype: DataQuestionType::default(), validation_pattern: Option::default(), use_for_leaderboard: true }
     }
 }
 
@@ -415,14 +420,7 @@ pub struct ChoiceConfig {
 
 impl Default for ChoiceConfig {
     fn default() -> Self {
-        Self {
-            multiple: Default::default(),
-            limit: 2,
-            dropdown: Default::default(),
-            horizontal: true,
-            conditional_key: Default::default(),
-            choices: Default::default(),
-        }
+        Self { multiple: Default::default(), limit: 2, dropdown: Default::default(), horizontal: true, conditional_key: None, choices: Vec::default() }
     }
 }
 
@@ -444,7 +442,7 @@ pub struct RatingConfig {
 
 impl Default for RatingConfig {
     fn default() -> Self {
-        Self { level: 5, symbol: Default::default(), color_gradient: Default::default() }
+        Self { level: 5, symbol: RatingSymbol::default(), color_gradient: RatingColorGradient::default() }
     }
 }
 
@@ -476,9 +474,9 @@ impl Default for SliderConfig {
             end: 1.0,
             steps: Default::default(),
             show_decimals: Default::default(),
-            unit: Default::default(),
-            score: Default::default(),
-            correct_answer: Default::default(),
+            unit: None,
+            score: None,
+            correct_answer: None,
         }
     }
 }
@@ -493,7 +491,7 @@ pub struct ChoiceItem {
 }
 
 impl fmt::Display for ChoiceItem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} - score: {:?} - correct: {}", self.title, self.score, self.correct)
     }
 }
@@ -549,7 +547,7 @@ pub struct LikertStatement {
 }
 
 impl fmt::Display for LikertStatement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} - score: {:?} - correct: {:?}", self.title, self.score, self.correct_choice)
     }
 }

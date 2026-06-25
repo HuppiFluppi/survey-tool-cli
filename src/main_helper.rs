@@ -40,7 +40,7 @@ pub struct ConfigTOCElement {
 
 pub fn build_toc(config: &SurveyConfig) -> ConfigTOC {
     ConfigTOC {
-        survey_title: config.title.to_string(),
+        survey_title: config.title.clone(),
         survey_type: config.survey_type,
         survey_desc: truncate(config.description.as_str()),
         has_conditionals: has_conditionals(config),
@@ -50,14 +50,14 @@ pub fn build_toc(config: &SurveyConfig) -> ConfigTOC {
             .map(|p| ConfigTOCPage {
                 page_title: p.title.as_deref().unwrap_or("<not set>").to_string(),
                 page_desc: truncate(p.description.as_deref().unwrap_or("<not set>")),
-                conditional: collect_conditional_setting(&p.conditional),
+                conditional: collect_conditional_setting(p.conditional.as_ref()),
                 elements: Vec::from_iter(p.content.iter().map(|c| {
                     let header = c.get_header();
                     ConfigTOCElement {
                         element_type: c.to_string(),
-                        element_title: header.title.to_string(),
+                        element_title: header.title.clone(),
                         element_required: header.required,
-                        conditional: collect_conditional_setting(&header.conditional),
+                        conditional: collect_conditional_setting(header.conditional.as_ref()),
                         config: c.format_config(),
                     }
                 })),
@@ -66,12 +66,12 @@ pub fn build_toc(config: &SurveyConfig) -> ConfigTOC {
     }
 }
 
-pub fn collect_conditional_setting(conditional: &Option<ConditionalSettings>) -> Option<String> {
+pub fn collect_conditional_setting(conditional: Option<&ConditionalSettings>) -> Option<String> {
     conditional.as_ref().map(|cs| format!("[{values}] for key '{key}'", values = cs.values.join(", "), key = cs.key))
 }
 
 pub fn has_conditionals(config: &SurveyConfig) -> bool {
-    for page in config.pages.iter() {
+    for page in &config.pages {
         if page.conditional.is_some() {
             return true;
         }
@@ -171,7 +171,9 @@ pub fn move_content(page: &mut SurveyPage) -> Result<(), inquire::InquireError> 
 
 pub fn new_content(page: &mut SurveyPage) -> Result<(), inquire::InquireError> {
     //select content position
-    let index = if !page.content.is_empty() {
+    let index = if page.content.is_empty() {
+        0
+    } else {
         let mut content_options: Vec<_> = page
             .content
             .iter()
@@ -191,8 +193,6 @@ pub fn new_content(page: &mut SurveyPage) -> Result<(), inquire::InquireError> {
         };
 
         index
-    } else {
-        0
     };
 
     //select new content type
@@ -364,7 +364,7 @@ pub fn edit_conditional_setting(setting: &mut Option<ConditionalSettings>) -> Re
 }
 
 pub fn prompt_text_list(msg: &str, field: &mut Vec<String>, empty_allowed: bool) -> Result<(), inquire::InquireError> {
-    println!("{}", msg);
+    println!("{msg}");
 
     let mut values = Vec::new();
 
@@ -397,7 +397,7 @@ pub fn prompt_choice_list(field: &mut Vec<ChoiceItem>) -> Result<(), inquire::In
         let mut values = Vec::new();
 
         loop {
-            match inquire::Select::new("Edit existing choice items:", field.to_vec()).with_help_message("Continue to new items with ESC").prompt_skippable()? {
+            match inquire::Select::new("Edit existing choice items:", field.clone()).with_help_message("Continue to new items with ESC").prompt_skippable()? {
                 None => break,
                 Some(mut c) => {
                     //title
@@ -429,12 +429,10 @@ pub fn prompt_choice_list(field: &mut Vec<ChoiceItem>) -> Result<(), inquire::In
             prompt_required_bool("  Correct answer?", &mut c.correct)?;
 
             field.push(c);
+        } else if field.len() > 1 {
+            break;
         } else {
-            if field.len() > 1 {
-                break;
-            } else {
-                println!(" {} at least two choices needed!", "Error:".red())
-            }
+            println!(" {} at least two choices needed!", "Error:".red());
         }
     }
 
@@ -447,7 +445,7 @@ pub fn prompt_statement_list(field: &mut Vec<LikertStatement>) -> Result<(), inq
         let mut values = Vec::new();
 
         loop {
-            match inquire::Select::new("Edit existing likert statements:", field.to_vec())
+            match inquire::Select::new("Edit existing likert statements:", field.clone())
                 .with_help_message("Continue to new items with ESC")
                 .prompt_skippable()?
             {
@@ -482,12 +480,10 @@ pub fn prompt_statement_list(field: &mut Vec<LikertStatement>) -> Result<(), inq
             prompt_optional_textfield("  Correct answer:", &mut c.correct_choice)?;
 
             field.push(c);
+        } else if field.len() > 1 {
+            break;
         } else {
-            if field.len() > 1 {
-                break;
-            } else {
-                println!(" {} at least two statements needed!", "Error:".red())
-            }
+            println!(" {} at least two statements needed!", "Error:".red());
         }
     }
 
@@ -615,28 +611,26 @@ pub fn prompt_optional_date(msg: &str, field: &mut Option<String>) -> Result<(),
 }
 
 pub fn input_score_settings() -> Result<ScoreSettings, inquire::InquireError> {
-    match inquire::Confirm::new("Do you want to use the default score settings?").with_default(true).prompt()? {
-        true => Ok(ScoreSettings::default()),
-        false => {
-            let show_question_scores = inquire::Confirm::new("Show scores on each question?").with_default(false).prompt()?;
-            let show_leaderboard = inquire::Confirm::new("Show leaderboard/highscore?").with_default(true).prompt()?;
+    if inquire::Confirm::new("Do you want to use the default score settings?").with_default(true).prompt()? {
+        Ok(ScoreSettings::default())
+    } else {
+        let show_question_scores = inquire::Confirm::new("Show scores on each question?").with_default(false).prompt()?;
+        let show_leaderboard = inquire::Confirm::new("Show leaderboard/highscore?").with_default(true).prompt()?;
 
-            let leaderboard = if show_leaderboard {
-                let show_scores = inquire::Confirm::new("Show player scores on leaderboard?").with_default(true).prompt()?;
-                let show_placeholder = inquire::Confirm::new("Show placeholder instead of empty rows?").with_default(true).prompt()?;
-                let limit: u8 =
-                    inquire::CustomType::new("Number of participants shown on leaderboard?").with_default(10).with_error_message(NUMBER_ERROR).prompt()?;
-                let background_image = inquire::Text::new("Enter optional leaderboard background image path (skip with ESC):")
-                    .prompt_skippable()?
-                    .filter(|t| !t.trim().is_empty());
+        let leaderboard = if show_leaderboard {
+            let show_scores = inquire::Confirm::new("Show player scores on leaderboard?").with_default(true).prompt()?;
+            let show_placeholder = inquire::Confirm::new("Show placeholder instead of empty rows?").with_default(true).prompt()?;
+            let limit: u8 =
+                inquire::CustomType::new("Number of participants shown on leaderboard?").with_default(10).with_error_message(NUMBER_ERROR).prompt()?;
+            let background_image =
+                inquire::Text::new("Enter optional leaderboard background image path (skip with ESC):").prompt_skippable()?.filter(|t| !t.trim().is_empty());
 
-                LeaderboardSettings::new(show_scores, show_placeholder, limit.into(), background_image)
-            } else {
-                LeaderboardSettings::default()
-            };
+            LeaderboardSettings::new(show_scores, show_placeholder, limit.into(), background_image)
+        } else {
+            LeaderboardSettings::default()
+        };
 
-            Ok(ScoreSettings::new(show_question_scores, show_leaderboard, leaderboard))
-        },
+        Ok(ScoreSettings::new(show_question_scores, show_leaderboard, leaderboard))
     }
 }
 
@@ -672,7 +666,7 @@ pub enum SurveyDetailFields {
 
 impl std::fmt::Display for SurveyDetailFields {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

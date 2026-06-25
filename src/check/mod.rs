@@ -68,13 +68,13 @@ fn check_document(
 
     if evaluation.flag().valid {
         check_files(instance, result, document_num, file)?;
-        check_conditionals(instance, result, document_num, conditionals)?;
+        check_conditionals(instance, result, document_num, conditionals);
         Ok(())
     } else {
         result.all_ok = false;
 
         evaluation.iter_errors().for_each(|x| {
-            result.error_list.push(format!("{} (document {}, loc {} - schema {})", x.error, document_num + 1, x.instance_location, x.schema_location))
+            result.error_list.push(format!("{} (document {}, loc {} - schema {})", x.error, document_num + 1, x.instance_location, x.schema_location));
         });
 
         Ok(())
@@ -86,7 +86,7 @@ fn check_conditionals(
     result: &mut crate::CheckResult,
     document_num: usize,
     conditionals: &mut HashSet<String>,
-) -> Result<(), error::STCError> {
+) {
     //check for page conditional settings
     if let Some(serde_json::Value::Object(obj)) = instance.pointer("/conditional")
         && let Some(k) = obj.get("key")
@@ -94,15 +94,15 @@ fn check_conditionals(
         && !conditionals.contains(key)
     {
         result.all_ok = false;
-        result.error_list.push(format!("Conditional key {} for page not found (document {})", key, document_num + 1))
+        result.error_list.push(format!("Conditional key {} for page not found (document {})", key, document_num + 1));
     }
 
     //check for conditional keys & content conditional settings
     if let Some(serde_json::Value::Array(content)) = instance.pointer("/content") {
-        for v in content.iter() {
+        for v in content {
             //add conditional_key
             if let Some(serde_json::Value::String(key)) = v.pointer("/config/conditional_key") {
-                conditionals.insert(key.to_string());
+                conditionals.insert(key.clone());
             }
 
             //check for content conditional settings
@@ -112,12 +112,10 @@ fn check_conditionals(
                 && !conditionals.contains(key)
             {
                 result.all_ok = false;
-                result.error_list.push(format!("Conditional key {} for content not found (document {})", key, document_num + 1))
+                result.error_list.push(format!("Conditional key {} for content not found (document {})", key, document_num + 1));
             }
         }
     }
-
-    Ok(())
 }
 
 fn check_files(instance: &serde_json::Value, result: &mut result::CheckResult, document: usize, template: &Path) -> Result<(), error::STCError> {
