@@ -7,10 +7,10 @@ This Rust-based CLI tool helps you check survey configurations for correctness a
 
 - [Overview](#overview)
 - [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
 - [Roadmap](#roadmap)
 - [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Usage](#usage)
 - [Disclaimer](#disclaimer)
 - [Contributing](#contributing)
 - [License](#license)
@@ -38,6 +38,22 @@ The tool helps ensure your survey configurations are valid before loading them i
 - **Error Reporting** - Detailed error messages with colored output
 - **Verbose Mode** - Optional detailed output for debugging
 - **Cross-platform** - Works on Windows and Linux (should work on macOS, but not tested)
+
+## Roadmap
+- [x] Add Github build pipeline for release
+- [x] Add edit/create of configuration files
+- [ ] Add interaction with survey-tool-server(s)
+- [ ] Refactor project with new insights and learnings in Rust
+
+## Tech Stack
+
+- **Language**: Rust (Edition 2024)
+- **CLI Framework**: clap 4.6
+- **Interactive Prompts**: inquire 0.9
+- **JSON Schema Validation**: jsonschema 0.46
+- **YAML Parsing**: serde-saphyr 0.0.28 (with serde-json 1.0)
+- **Output Formatting**: colored 3.1
+- **Regex parsing**: regex 1.12
 
 ## Installation
 
@@ -114,22 +130,6 @@ View all available commands:
 survey-tool-cli --help
 ```
 
-## Roadmap
-- [x] Add Github build pipeline for release
-- [x] Add edit/create of configuration files
-- [ ] Add interaction with survey-tool-server(s)
-- [ ] Refactor project with new insights and learnings in Rust
-
-## Tech Stack
-
-- **Language**: Rust (Edition 2024)
-- **CLI Framework**: clap 4.6
-- **Interactive Prompts**: inquire 0.9
-- **JSON Schema Validation**: jsonschema 0.46
-- **YAML Parsing**: serde-saphyr 0.0.27 (with serde-json 1.0)
-- **Output Formatting**: colored 3.1
-- **Regex parsing**: regex 1.12
-
 ## Disclaimer
 
 This software is provided "as is", without warranty of any kind. The author is certain, this software could be done more concise, prettier and overall better.
@@ -141,6 +141,7 @@ Contributions are welcome! Please:
 - Open issues with clear steps to reproduce and expected behavior
 - Submit Pull Requests with concise descriptions and clean commit history
 - Follow Rust coding conventions and run `cargo fmt` before submitting
+- Run `cargo clippy` and fix any new findings
 - Follow the project’s coding style and patterns (but please feel free to suggest improvements)
 - Add tests for new functionality where applicable
 - Add documentation for your changes
