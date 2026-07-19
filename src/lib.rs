@@ -39,6 +39,13 @@ pub fn load_config(file: &str) -> Result<SurveyConfig, STCError> {
     config::load(Path::new(file))
 }
 
+/// Load an existing survey tool configuration from string (yaml format) and return its representation ([SurveyConfig]).
+///
+/// *config*: content of a survey configuration
+pub fn load_config_from_string(config: &str) -> Result<SurveyConfig, STCError> {
+    config::load_from_string(config)
+}
+
 /// Save survey tool configuration model([SurveyConfig]).
 ///
 /// *file*: path to the configuration file
@@ -46,4 +53,11 @@ pub fn load_config(file: &str) -> Result<SurveyConfig, STCError> {
 /// *config*: the config to save
 pub fn save_config(file: &str, overwrite: bool, config: &SurveyConfig) -> Result<(), STCError> {
     config::save(Path::new(file), overwrite, config)
+}
+
+/// Serialize a survey tool configuration model([SurveyConfig]).
+///
+/// *config*: the config to save
+pub fn serialize_config(config: &SurveyConfig) -> Result<String, STCError> {
+    config::serialize_config(config)
 }

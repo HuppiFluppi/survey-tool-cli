@@ -18,16 +18,16 @@ pub fn load(file: &path::Path) -> Result<SurveyConfig, STCError> {
     //check file extension
     check_file_ext(file)?;
 
-    //load file
+    //load config from file
     let file_content = fs::read_to_string(file)?;
+    load_from_string(&file_content)
+}
+
+pub fn load_from_string(config: &str) -> Result<SurveyConfig, STCError> {
     let document_divider = RegexBuilder::new(r"^---").multi_line(true).build().unwrap();
-    let documents: Vec<&str> = document_divider.split(&file_content).filter(|s| !s.is_empty()).collect();
+    let documents: Vec<&str> = document_divider.split(config).filter(|s| !s.is_empty()).collect();
     if documents.len() < 2 {
-        return Err(STCError::YAMLFormat(format!(
-            "File '{}' is missing the right number of YAML documents. Minimum: 2, found: {}",
-            file.display(),
-            documents.len()
-        )));
+        return Err(STCError::YAMLFormat(format!("Config is missing the right number of YAML documents. Minimum: 2, found: {}", documents.len())));
     }
 
     let mut config: SurveyConfig = serde_saphyr::from_str(documents[0])?;
@@ -51,29 +51,32 @@ pub fn save(file: &path::Path, overwrite: bool, config: &SurveyConfig) -> Result
     //check extension
     check_file_ext(file)?;
 
+    // serialize and save to file
+    let serialized_str = serialize_config(config)?;
+    fs::write(file, serialized_str)?;
+
+    Ok(())
+}
+
+pub fn serialize_config(config: &SurveyConfig) -> Result<String, STCError> {
     //check config
     if config.pages.is_empty() {
         return Err(STCError::YAMLFormat("Config malformed without a single page".to_string()));
     }
 
-    //save file
-    let mut documents = Vec::with_capacity(config.pages.len());
+    //serialize
+    let mut documents = Vec::with_capacity(config.pages.len() + 1);
     documents.push(serde_saphyr::to_string(config)?);
     for page in &config.pages {
         documents.push(serde_saphyr::to_string(page)?);
     }
 
-    fs::write(file, documents.join("\n---\n"))?;
-
-    Ok(())
+    Ok(documents.join("\n---\n"))
 }
 
 fn check_file_ext(file: &path::Path) -> Result<(), STCError> {
     let Some(ext) = file.extension() else {
-        return Err(STCError::IO(io::Error::new(
-            io::ErrorKind::Unsupported,
-            format!("File '{}' has no extension (.yaml or .yml needed)", file.display()),
-        )));
+        return Err(STCError::IO(io::Error::new(io::ErrorKind::Unsupported, format!("File '{}' has no extension (.yaml or .yml needed)", file.display()))));
     };
     let ext = ext.to_ascii_lowercase();
     if ext != "yaml" && ext != "yml" {
