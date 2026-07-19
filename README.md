@@ -50,10 +50,10 @@ The tool helps ensure your survey configurations are valid before loading them i
 - **Language**: Rust (Edition 2024)
 - **CLI Framework**: clap 4.6
 - **Interactive Prompts**: inquire 0.9
-- **JSON Schema Validation**: jsonschema 0.46
-- **YAML Parsing**: serde-saphyr 0.0.28 (with serde-json 1.0)
+- **JSON Schema Validation**: jsonschema 0.48
+- **YAML Parsing**: serde-saphyr 0.0.29 (with serde-json 1.0)
 - **Output Formatting**: colored 3.1
-- **Regex parsing**: regex 1.12
+- **Regex parsing**: regex 1.13
 
 ## Installation
 
