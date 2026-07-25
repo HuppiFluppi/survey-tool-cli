@@ -225,18 +225,20 @@ impl Default for SurveyPageContentHeader {
     }
 }
 
-// #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-// #[serde(rename_all = "lowercase")]
-// pub enum SurveyContentType {
-//     Text,
-//     Choice,
-//     Data,
-//     Rating,
-//     Likert,
-//     Information,
-//     DateTime,
-//     Slider,
-// }
+/// While not used in the serialization process, it might come in handy for other use cases.
+/// Serde serialization uses internally tagged enum representation (the enum variant name).
+#[derive(Debug, Clone, Copy, Display, EnumString, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SurveyContentType {
+    Text,
+    Choice,
+    Data,
+    Rating,
+    Likert,
+    Information,
+    DateTime,
+    Slider,
+}
 
 #[derive(Debug, Serialize, Deserialize, EnumString, Display, VariantNames)]
 #[serde(rename_all = "lowercase", tag = "type")]
